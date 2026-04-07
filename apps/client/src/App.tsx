@@ -9,6 +9,8 @@ import { BreedingSimulatorPage } from './features/breeding/BreedingSimulatorPage
 import { PedigreeEditorPage } from './features/breeding/PedigreeEditorPage';
 import { BreedingPlanPage } from './features/breeding/BreedingPlanPage';
 import { OcrPage } from './features/ocr/OcrPage';
+import { CalendarPage } from './features/calendar/CalendarPage';
+import { GalleryPage } from './features/gallery/GalleryPage';
 
 function App() {
   return (
@@ -26,6 +28,9 @@ function App() {
         <Route path="/breeding/plans" element={<BreedingPlanPage />} />
         {/* OCR 自動入力 */}
         <Route path="/ocr" element={<OcrPage />} />
+        {/* メモ機能 */}
+        <Route path="/calendar" element={<CalendarPage />} />
+        <Route path="/gallery" element={<GalleryPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

@@ -10,6 +10,8 @@ import { lineageRouter } from './features/horses/lineage.routes.js';
 import { foalRouter } from './features/foals/foal.routes.js';
 import { breedingRouter } from './features/breeding/breeding.routes.js';
 import { ocrRouter } from './features/ocr/ocr.routes.js';
+import { calendarRouter } from './features/calendar/calendar.routes.js';
+import { galleryRouter } from './features/gallery/gallery.routes.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -18,6 +20,7 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // ヘルスチェック
 app.get('/api/health', (_req, res) => {
@@ -31,6 +34,8 @@ app.use('/api/lineages', lineageRouter);
 app.use('/api/foals', foalRouter);
 app.use('/api/breeding', breedingRouter);
 app.use('/api/ocr', ocrRouter);
+app.use('/api/calendar', calendarRouter);
+app.use('/api/gallery', galleryRouter);
 
 // エラーハンドリング
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

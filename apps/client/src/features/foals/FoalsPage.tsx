@@ -3,21 +3,43 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { EVAL_MARKS, GENDERS, GROWTH_TYPES, FLAG_TYPES, estimateSpeed } from '@winpost/shared';
 import type { EvalMark, GrowthType } from '@winpost/shared';
-import { Plus, Pencil, Trash2, Search, X, Flag, Tag } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Flag, Tag } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 const evalMarkClass: Record<string, string> = {
-  DOUBLE_CIRCLE: 'eval-mark eval-mark-dc',
-  CIRCLE: 'eval-mark eval-mark-c',
-  TRIANGLE: 'eval-mark eval-mark-t',
-  NONE: 'eval-mark eval-mark-n',
+  DOUBLE_CIRCLE: 'text-rose-600 font-black',
+  CIRCLE: 'text-orange-500 font-bold',
+  TRIANGLE: 'text-emerald-500 font-semibold',
+  NONE: 'text-slate-300',
 };
 
 const speedRankClass: Record<string, string> = {
-  S: 'speed-rank speed-rank-s',
-  A: 'speed-rank speed-rank-a',
-  B: 'speed-rank speed-rank-b',
-  C: 'speed-rank speed-rank-c',
-  D: 'speed-rank speed-rank-d',
+  S: 'bg-gradient-to-br from-rose-500 to-orange-500 text-white border-transparent',
+  A: 'bg-orange-100 text-orange-700 border-orange-200',
+  B: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+  C: 'bg-blue-100 text-blue-700 border-blue-200',
+  D: 'bg-slate-100 text-slate-600 border-slate-200',
 };
 
 export function FoalsPage() {
@@ -27,6 +49,7 @@ export function FoalsPage() {
   const [editId, setEditId] = useState<number | null>(null);
   const [search, setSearch] = useState('');
   const [filterYear, setFilterYear] = useState('');
+  const [filterFlag, setFilterFlag] = useState('');
 
   const { data: foals = [], isLoading } = useQuery({
     queryKey: ['foals'],
@@ -46,7 +69,8 @@ export function FoalsPage() {
   const filtered = foals.filter((f) => {
     const matchSearch = !search || f.name?.toLowerCase().includes(search.toLowerCase());
     const matchYear = !filterYear || f.birthYear === Number(filterYear);
-    return matchSearch && matchYear;
+    const matchFlag = !filterFlag || f.flags?.some(flag => flag.type === filterFlag);
+    return matchSearch && matchYear && matchFlag;
   });
 
   const birthYears = useMemo(() => {
@@ -54,140 +78,160 @@ export function FoalsPage() {
   }, [foals]);
 
   return (
-    <>
-      <div className="page-header">
-        <h1>幼駒管理</h1>
-        <p>幼駒の評価印・スピード推測・フラグを管理します</p>
-      </div>
-      <div className="page-body">
-        <div className="toolbar">
-          <div className="search-input">
-            <Search />
-            <input className="form-input" placeholder="幼駒を検索..."
-              value={search} onChange={(e) => setSearch(e.target.value)}
-              style={{ paddingLeft: '2.5rem', width: 240 }} />
-          </div>
-          <select className="form-select" value={filterYear} onChange={(e) => setFilterYear(e.target.value)}
-            style={{ width: 140 }}>
-            <option value="">全年度</option>
-            {birthYears.map((y) => (
-              <option key={y} value={y}>{y}年</option>
-            ))}
-          </select>
-          <div className="toolbar-spacer" />
-          <button className="btn btn-primary" onClick={() => { setEditId(null); setShowModal(true); }}>
-            <Plus /> 新規登録
-          </button>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border pb-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">幼駒管理</h1>
+          <p className="text-slate-500 mt-1">幼駒の評価印・スピード推測・フラグを管理します</p>
         </div>
+        <Button onClick={() => { setEditId(null); setShowModal(true); }} size="lg">
+          <Plus className="w-5 h-5 mr-2" /> 新規登録
+        </Button>
+      </div>
 
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative w-full sm:max-w-xs">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
+          <Input className="pl-9 bg-white" placeholder="幼駒を検索..." value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+        <Select value={filterYear} onValueChange={setFilterYear}>
+          <SelectTrigger className="w-[140px] bg-white">
+            <SelectValue placeholder="全年度" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">全年度</SelectItem>
+            {birthYears.map((y) => (
+              <SelectItem key={y} value={y.toString()}>{y}年</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={filterFlag} onValueChange={setFilterFlag}>
+          <SelectTrigger className="w-[160px] bg-white">
+            <SelectValue placeholder="全てのフラグ" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">全てのフラグ</SelectItem>
+            {Object.entries(FLAG_TYPES).map(([key, label]) => (
+              <SelectItem key={key} value={key}>{label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         {isLoading ? (
-          <div className="loading-container"><div className="loading-spinner" /></div>
+          <div className="flex justify-center p-12 text-slate-500">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mr-3"></div>
+            読み込み中...
+          </div>
         ) : filtered.length === 0 ? (
-          <div className="empty-state">
-            <Search />
-            <h3>幼駒が登録されていません</h3>
-            <p>「新規登録」ボタンから幼駒を追加してください</p>
+          <div className="flex flex-col items-center justify-center p-16 text-center">
+            <Search className="h-12 w-12 text-slate-300 mb-4" />
+            <h3 className="text-lg font-semibold text-slate-800">幼駒が見つかりません</h3>
+            <p className="text-slate-500 mt-1">「新規登録」ボタンから幼駒を追加してください</p>
           </div>
         ) : (
-          <div className="table-container">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>名前</th>
-                  <th>年</th>
-                  <th>性別</th>
-                  <th>父</th>
-                  <th>母</th>
-                  <th>河童木</th>
-                  <th>美香</th>
-                  <th>推測</th>
-                  <th>成長</th>
-                  <th>フラグ</th>
-                  <th>操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((f) => {
-                  const estimate = estimateSpeed(
-                    f.kappaMark,
-                    f.mikaMark,
-                    f.growthType || undefined
-                  );
-                  return (
-                    <tr key={f.id}>
-                      <td style={{ fontWeight: 600 }}>{f.name || '（未命名）'}</td>
-                      <td>{f.birthYear}</td>
-                      <td>
-                        <span className={`badge ${f.gender === 'MALE' ? 'badge-info' : 'badge-danger'}`}>
-                          {GENDERS[f.gender]}
-                        </span>
-                      </td>
-                      <td style={{ fontSize: 'var(--text-xs)' }}>{f.sire?.name || '—'}</td>
-                      <td style={{ fontSize: 'var(--text-xs)' }}>{f.dam?.name || '—'}</td>
-                      <td>
-                        <span className={evalMarkClass[f.kappaMark] || 'eval-mark eval-mark-n'}>
-                          {EVAL_MARKS[f.kappaMark] || '－'}
-                        </span>
-                      </td>
-                      <td>
-                        <span className={evalMarkClass[f.mikaMark] || 'eval-mark eval-mark-n'}>
-                          {EVAL_MARKS[f.mikaMark] || '－'}
-                        </span>
-                      </td>
-                      <td>
-                        <span className={speedRankClass[estimate.rank] || 'speed-rank'} title={estimate.description}>
-                          {estimate.rank}
-                        </span>
-                      </td>
-                      <td style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
-                        {f.growthType ? GROWTH_TYPES[f.growthType] : '—'}
-                      </td>
-                      <td>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                          {f.flags?.map((flag) => (
-                            <span key={flag.id}
-                              className={`badge ${flag.type === 'KEEP' ? 'badge-success' : flag.type === 'SELL' ? 'badge-danger' : flag.type === 'OVERSEAS_SALE' ? 'badge-warning' : 'badge-info'}`}
-                              style={{ cursor: 'pointer' }}
+          <Table>
+            <TableHeader className="bg-slate-50/80 sticky top-0">
+              <TableRow>
+                <TableHead className="font-semibold text-slate-700">名前</TableHead>
+                <TableHead className="font-semibold text-slate-700 text-center w-16">年</TableHead>
+                <TableHead className="font-semibold text-slate-700 text-center w-16">性別</TableHead>
+                <TableHead className="font-semibold text-slate-700">父 / 母</TableHead>
+                <TableHead className="font-semibold text-slate-700 text-center w-20">河童木</TableHead>
+                <TableHead className="font-semibold text-slate-700 text-center w-20">美香</TableHead>
+                <TableHead className="font-semibold text-slate-700 text-center w-20">推測</TableHead>
+                <TableHead className="font-semibold text-slate-700 w-24">成長</TableHead>
+                <TableHead className="font-semibold text-slate-700 min-w-[150px]">フラグ</TableHead>
+                <TableHead className="font-semibold text-slate-700 w-32 text-center">操作</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((f) => {
+                const estimate = estimateSpeed(f.kappaMark, f.mikaMark, f.growthType || undefined);
+                return (
+                  <TableRow key={f.id} className="hover:bg-slate-50">
+                    <TableCell className="font-bold text-slate-900">{f.name || '（未命名）'}</TableCell>
+                    <TableCell className="text-center tabular-nums text-slate-600">{f.birthYear}</TableCell>
+                    <TableCell className="text-center">
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${f.gender === 'MALE' ? 'bg-blue-50 text-blue-700 border border-blue-100' : 'bg-rose-50 text-rose-700 border border-rose-100'}`}>
+                        {GENDERS[f.gender]}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-xs font-semibold text-blue-700">{f.sire?.name || '—'}</span>
+                        <span className="text-xs text-rose-600">{f.dam?.name || '—'}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center text-lg">
+                      <span className={evalMarkClass[f.kappaMark] || evalMarkClass.NONE}>{EVAL_MARKS[f.kappaMark] || '－'}</span>
+                    </TableCell>
+                    <TableCell className="text-center text-lg">
+                      <span className={evalMarkClass[f.mikaMark] || evalMarkClass.NONE}>{EVAL_MARKS[f.mikaMark] || '－'}</span>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant="outline" className={`w-8 h-8 rounded-full flex items-center justify-center p-0 font-bold ${speedRankClass[estimate.rank] || speedRankClass.D}`} title={estimate.description}>
+                        {estimate.rank}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs text-slate-500 whitespace-nowrap">
+                      {f.growthType ? GROWTH_TYPES[f.growthType] : '—'}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {f.flags?.map((flag) => {
+                          const isKeep = flag.type === 'KEEP';
+                          const isDanger = flag.type === 'SALE_AUGUST' || flag.type === 'SALE_OVERSEAS';
+                          const isInfo = flag.type === 'CLUB';
+                          const cls = isKeep ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' :
+                                      isDanger ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100' :
+                                      isInfo ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100' :
+                                      'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100';
+                          return (
+                            <Badge key={flag.id} variant="outline" className={`cursor-pointer ${cls}`}
                               onClick={() => {
                                 if (confirm(`フラグ「${FLAG_TYPES[flag.type]}」を削除しますか？`)) {
                                   deleteFlagMutation.mutate({ foalId: f.id, flagId: flag.id });
                                 }
-                              }}>
-                              {FLAG_TYPES[flag.type]} ×
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                      <td>
-                        <div style={{ display: 'flex', gap: 'var(--space-1)' }}>
-                          <button className="btn btn-ghost btn-sm" onClick={() => { setEditId(f.id); setShowModal(true); }}>
-                            <Pencil />
-                          </button>
-                          <button className="btn btn-ghost btn-sm" onClick={() => setShowFlagModal(f.id)}>
-                            <Flag />
-                          </button>
-                          <button className="btn btn-ghost btn-sm" onClick={() => {
-                            if (confirm(`幼駒を削除しますか？`)) deleteMutation.mutate(f.id);
-                          }}>
-                            <Trash2 />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                              }}
+                            >
+                              {FLAG_TYPES[flag.type]} <X className="w-3 h-3 ml-1 opacity-50" />
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-center gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-slate-900" onClick={() => { setEditId(f.id); setShowModal(true); }}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-amber-500 hover:text-amber-600 hover:bg-amber-50" onClick={() => setShowFlagModal(f.id)}>
+                          <Flag className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50" onClick={() => {
+                          if (confirm(`幼駒を削除しますか？`)) deleteMutation.mutate(f.id);
+                        }}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
         )}
       </div>
 
       {showModal && <FoalModal editId={editId} onClose={() => setShowModal(false)} />}
       {showFlagModal && <FlagModal foalId={showFlagModal} onClose={() => setShowFlagModal(null)} />}
-    </>
+    </div>
   );
 }
 
+// ---------------- Foal Modal ----------------
 interface FoalForm {
   name: string;
   birthYear: number;
@@ -251,8 +295,7 @@ function FoalModal({ editId, onClose }: { editId: number | null; onClose: () => 
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = () => {
     mutation.mutate({
       ...form,
       birthYear: Number(form.birthYear),
@@ -263,137 +306,127 @@ function FoalModal({ editId, onClose }: { editId: number | null; onClose: () => 
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>{isEdit ? '幼駒を編集' : '幼駒を登録'}</h2>
-          <button className="btn btn-ghost btn-sm" onClick={onClose}><X /></button>
-        </div>
-        <form onSubmit={handleSubmit}>
-          <div className="modal-body">
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">名前</label>
-                <input className="form-input" value={form.name} placeholder="未命名でもOK"
-                  onChange={(e) => setForm({ ...form, name: e.target.value })} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">出生年 *</label>
-                <input className="form-input" type="number" required value={form.birthYear}
-                  onChange={(e) => setForm({ ...form, birthYear: Number(e.target.value) })} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">性別 *</label>
-                <select className="form-select" required value={form.gender}
-                  onChange={(e) => setForm({ ...form, gender: e.target.value })}>
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-xl">{isEdit ? '幼駒を編集' : '幼駒を登録'}</DialogTitle>
+        </DialogHeader>
+
+        <div className="grid gap-5 py-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="space-y-2 col-span-2 md:col-span-1">
+              <Label>名前</Label>
+              <Input value={form.name} placeholder="未命名でもOK" onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>出生年 <span className="text-rose-500">*</span></Label>
+              <Input type="number" required value={form.birthYear} onChange={(e) => setForm({ ...form, birthYear: Number(e.target.value) })} />
+            </div>
+            <div className="space-y-2">
+              <Label>性別 <span className="text-rose-500">*</span></Label>
+              <Select value={form.gender} onValueChange={(val) => setForm({ ...form, gender: val })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
                   {Object.entries(GENDERS).map(([key, label]) => (
-                    <option key={key} value={key}>{label}</option>
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
                   ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">父（種牡馬）</label>
-                <select className="form-select" value={form.sireId}
-                  onChange={(e) => setForm({ ...form, sireId: e.target.value ? Number(e.target.value) : '' })}>
-                  <option value="">未選択</option>
-                  {stallions.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label">母（繁殖牝馬）</label>
-                <select className="form-select" value={form.damId}
-                  onChange={(e) => setForm({ ...form, damId: e.target.value ? Number(e.target.value) : '' })}>
-                  <option value="">未選択</option>
-                  {mares.map((m) => (
-                    <option key={m.id} value={m.id}>{m.name}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* 評価印 + リアルタイム推測 */}
-            <div className="card" style={{ marginBottom: 'var(--space-5)', padding: 'var(--space-4)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', marginBottom: 'var(--space-3)' }}>
-                <Tag style={{ width: 18, height: 18, color: 'var(--color-accent-warning)' }} />
-                <span style={{ fontWeight: 600 }}>評価印 & スピード推測</span>
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">河童木の印</label>
-                  <select className="form-select" value={form.kappaMark}
-                    onChange={(e) => setForm({ ...form, kappaMark: e.target.value })}>
-                    {Object.entries(EVAL_MARKS).map(([key, label]) => (
-                      <option key={key} value={key}>{label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">美香の印</label>
-                  <select className="form-select" value={form.mikaMark}
-                    onChange={(e) => setForm({ ...form, mikaMark: e.target.value })}>
-                    {Object.entries(EVAL_MARKS).map(([key, label]) => (
-                      <option key={key} value={key}>{label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">成長型</label>
-                  <select className="form-select" value={form.growthType}
-                    onChange={(e) => setForm({ ...form, growthType: e.target.value })}>
-                    <option value="">不明</option>
-                    {Object.entries(GROWTH_TYPES).map(([key, label]) => (
-                      <option key={key} value={key}>{label}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 'var(--space-4)',
-                padding: 'var(--space-3)', background: 'var(--color-bg-input)',
-                borderRadius: 'var(--radius-md)', marginTop: 'var(--space-2)'
-              }}>
-                <span className={speedRankClass[estimate.rank] || 'speed-rank'}>
-                  {estimate.rank}
-                </span>
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>
-                    スコア: {estimate.score}
-                  </div>
-                  <div style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)' }}>
-                    {estimate.description}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">馬体診断コメント</label>
-              <textarea className="form-textarea" value={form.bodyComment}
-                onChange={(e) => setForm({ ...form, bodyComment: e.target.value })} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">メモ</label>
-              <textarea className="form-textarea" value={form.memo}
-                onChange={(e) => setForm({ ...form, memo: e.target.value })} />
+                </SelectContent>
+              </Select>
             </div>
           </div>
-          <div className="modal-footer">
-            <button type="button" className="btn btn-secondary" onClick={onClose}>キャンセル</button>
-            <button type="submit" className="btn btn-primary" disabled={mutation.isPending}>
-              {mutation.isPending ? '保存中...' : isEdit ? '更新' : '登録'}
-            </button>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border border-slate-100 bg-slate-50 p-4 rounded-lg">
+            <div className="space-y-2">
+              <Label className="text-blue-700">父（種牡馬）</Label>
+              <Select value={form.sireId.toString()} onValueChange={(val) => setForm({ ...form, sireId: val === 'none' ? '' : Number(val) })}>
+                <SelectTrigger className="bg-white"><SelectValue placeholder="未選択" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">未選択</SelectItem>
+                  {stallions.map((s) => <SelectItem key={s.id} value={s.id.toString()}>{s.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-rose-700">母（繁殖牝馬）</Label>
+              <Select value={form.damId.toString()} onValueChange={(val) => setForm({ ...form, damId: val === 'none' ? '' : Number(val) })}>
+                <SelectTrigger className="bg-white"><SelectValue placeholder="未選択" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">未選択</SelectItem>
+                  {mares.map((m) => <SelectItem key={m.id} value={m.id.toString()}>{m.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-        </form>
-      </div>
-    </div>
+
+          <div className="space-y-4 border border-amber-100 bg-amber-50/30 p-4 rounded-lg">
+            <div className="flex items-center gap-2 text-amber-700">
+              <Tag className="w-5 h-5" />
+              <span className="font-semibold">評価印 & スピード推測</span>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>河童木の印</Label>
+                <Select value={form.kappaMark} onValueChange={(val) => setForm({ ...form, kappaMark: val })}>
+                  <SelectTrigger className="bg-white"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(EVAL_MARKS).map(([key, label]) => <SelectItem key={key} value={key}>{label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>美香の印</Label>
+                <Select value={form.mikaMark} onValueChange={(val) => setForm({ ...form, mikaMark: val })}>
+                  <SelectTrigger className="bg-white"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(EVAL_MARKS).map(([key, label]) => <SelectItem key={key} value={key}>{label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>成長型</Label>
+                <Select value={form.growthType || 'none'} onValueChange={(val) => setForm({ ...form, growthType: val === 'none' ? '' : val })}>
+                  <SelectTrigger className="bg-white"><SelectValue placeholder="不明" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">不明</SelectItem>
+                    {Object.entries(GROWTH_TYPES).map(([key, label]) => <SelectItem key={key} value={key}>{label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4 bg-white p-3 rounded-md border border-slate-200 mt-2">
+              <Badge variant="outline" className={`w-10 h-10 rounded-full flex items-center justify-center p-0 text-lg font-bold ${speedRankClass[estimate.rank] || speedRankClass.D}`}>
+                {estimate.rank}
+              </Badge>
+              <div>
+                <div className="font-bold text-slate-800">スコア: {estimate.score}</div>
+                <div className="text-sm text-slate-500">{estimate.description}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>馬体診断コメント</Label>
+            <Textarea value={form.bodyComment} onChange={(e) => setForm({ ...form, bodyComment: e.target.value })} rows={2} />
+          </div>
+          <div className="space-y-2">
+            <Label>メモ</Label>
+            <Textarea value={form.memo} onChange={(e) => setForm({ ...form, memo: e.target.value })} rows={2} />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>キャンセル</Button>
+          <Button onClick={handleSubmit} disabled={mutation.isPending}>
+            {mutation.isPending ? '保存中...' : isEdit ? '更新' : '登録'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
+// ---------------- Flag Modal ----------------
 function FlagModal({ foalId, onClose }: { foalId: number; onClose: () => void }) {
   const queryClient = useQueryClient();
   const [type, setType] = useState('WATCH');
@@ -409,45 +442,41 @@ function FlagModal({ foalId, onClose }: { foalId: number; onClose: () => void })
   });
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 400 }}>
-        <div className="modal-header">
-          <h2>フラグを追加</h2>
-          <button className="btn btn-ghost btn-sm" onClick={onClose}><X /></button>
-        </div>
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          mutation.mutate({ type, description: description || null, targetDate: targetDate || null });
-        }}>
-          <div className="modal-body">
-            <div className="form-group">
-              <label className="form-label">フラグ種別 *</label>
-              <select className="form-select" required value={type}
-                onChange={(e) => setType(e.target.value)}>
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[400px]">
+        <DialogHeader>
+          <DialogTitle>フラグを追加</DialogTitle>
+        </DialogHeader>
+
+        <div className="grid gap-4 py-4">
+          <div className="space-y-2">
+            <Label>フラグ種別 <span className="text-rose-500">*</span></Label>
+            <Select value={type} onValueChange={setType}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
                 {Object.entries(FLAG_TYPES).map(([key, label]) => (
-                  <option key={key} value={key}>{label}</option>
+                  <SelectItem key={key} value={key}>{label}</SelectItem>
                 ))}
-              </select>
-            </div>
-            <div className="form-group">
-              <label className="form-label">説明</label>
-              <input className="form-input" value={description}
-                placeholder="例: ジャパンカップ路線で使用"
-                onChange={(e) => setDescription(e.target.value)} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">目標日</label>
-              <input className="form-input" value={targetDate}
-                placeholder="例: 12月4週"
-                onChange={(e) => setTargetDate(e.target.value)} />
-            </div>
+              </SelectContent>
+            </Select>
           </div>
-          <div className="modal-footer">
-            <button type="button" className="btn btn-secondary" onClick={onClose}>キャンセル</button>
-            <button type="submit" className="btn btn-primary" disabled={mutation.isPending}>追加</button>
+          <div className="space-y-2">
+            <Label>説明</Label>
+            <Input value={description} placeholder="例: ジャパンカップ路線で使用" onChange={(e) => setDescription(e.target.value)} />
           </div>
-        </form>
-      </div>
-    </div>
+          <div className="space-y-2">
+            <Label>目標日</Label>
+            <Input value={targetDate} placeholder="例: 12月4週" onChange={(e) => setTargetDate(e.target.value)} />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>キャンセル</Button>
+          <Button onClick={() => mutation.mutate({ type, description: description || null, targetDate: targetDate || null })} disabled={mutation.isPending}>
+            追加
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

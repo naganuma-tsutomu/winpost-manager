@@ -90,4 +90,29 @@ export const api = {
       delete: (id: number) => request<void>(`/breeding/nicks/${id}`, { method: 'DELETE' }),
     },
   },
+  // カレンダー・TODO
+  calendar: {
+    events: {
+      list: () => request<any[]>('/calendar/events'),
+      create: (data: unknown) => request<any>('/calendar/events', { method: 'POST', body: JSON.stringify(data) }),
+      update: (id: number, data: unknown) => request<any>(`/calendar/events/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+      delete: (id: number) => request<void>(`/calendar/events/${id}`, { method: 'DELETE' }),
+    }
+  },
+  // ギャラリー
+  gallery: {
+    list: () => request<any[]>('/gallery'),
+    create: async (formData: FormData) => {
+      const res = await fetch('/api/gallery', {
+        method: 'POST',
+        body: formData,
+      });
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: 'リクエストに失敗しました' }));
+        throw new Error(error.error || `HTTP ${res.status}`);
+      }
+      return res.json();
+    },
+    delete: (id: number) => request<void>(`/gallery/${id}`, { method: 'DELETE' }),
+  }
 };

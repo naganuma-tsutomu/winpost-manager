@@ -45,10 +45,11 @@ export type FactorType = keyof typeof FACTOR_TYPES;
 
 // フラグ
 export const FLAG_TYPES = {
-  OVERSEAS_SALE: '海外セリ候補',
-  KEEP: '所有確定',
-  SELL: '売却予定',
-  WATCH: '要観察',
+  KEEP: '自己所有',
+  CLUB: 'クラブへ回す',
+  SALE_AUGUST: '8月セリで売却',
+  SALE_OVERSEAS: '12月海外セリで売却',
+  WATCH: '様子見',
 } as const;
 
 export type FlagType = keyof typeof FLAG_TYPES;

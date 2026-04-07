@@ -2,7 +2,28 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { FACTOR_TYPES } from '@winpost/shared';
-import { Plus, Pencil, Trash2, Search, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 export function MaresPage() {
   const queryClient = useQueryClient();
@@ -25,90 +46,102 @@ export function MaresPage() {
   );
 
   return (
-    <>
-      <div className="page-header">
-        <h1>繁殖牝馬管理</h1>
-        <p>繁殖牝馬のデータを登録・管理します</p>
-      </div>
-      <div className="page-body">
-        <div className="toolbar">
-          <div className="search-input">
-            <Search />
-            <input className="form-input" placeholder="繁殖牝馬を検索..."
-              value={search} onChange={(e) => setSearch(e.target.value)}
-              style={{ paddingLeft: '2.5rem', width: 280 }} />
-          </div>
-          <div className="toolbar-spacer" />
-          <button className="btn btn-primary" onClick={() => { setEditId(null); setShowModal(true); }}>
-            <Plus /> 新規登録
-          </button>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border pb-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">繁殖牝馬管理</h1>
+          <p className="text-slate-500 mt-1">繁殖牝馬のデータを登録・管理します</p>
         </div>
+        <Button onClick={() => { setEditId(null); setShowModal(true); }} size="lg">
+          <Plus className="w-5 h-5 mr-2" /> 新規登録
+        </Button>
+      </div>
 
+      <div className="flex items-center space-x-2">
+        <div className="relative w-full max-w-sm">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
+          <Input
+            className="pl-9 bg-white"
+            placeholder="繁殖牝馬を検索..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         {isLoading ? (
-          <div className="loading-container"><div className="loading-spinner" /></div>
+          <div className="flex justify-center p-12 text-slate-500">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mr-3"></div>
+            読み込み中...
+          </div>
         ) : filtered.length === 0 ? (
-          <div className="empty-state">
-            <Search />
-            <h3>繁殖牝馬が登録されていません</h3>
-            <p>「新規登録」ボタンから繁殖牝馬を追加してください</p>
+          <div className="flex flex-col items-center justify-center p-16 text-center">
+            <Search className="h-12 w-12 text-slate-300 mb-4" />
+            <h3 className="text-lg font-semibold text-slate-800">繁殖牝馬が登録されていません</h3>
+            <p className="text-slate-500 mt-1">「新規登録」ボタンから繁殖牝馬を追加してください</p>
           </div>
         ) : (
-          <div className="table-container">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>名前</th>
-                  <th>系統</th>
-                  <th>因子</th>
-                  <th>SP</th>
-                  <th>ST</th>
-                  <th>メモ</th>
-                  <th>操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((m) => (
-                  <tr key={m.id}>
-                    <td style={{ fontWeight: 600 }}>{m.name}</td>
-                    <td><span className="badge badge-success">{m.lineage}</span></td>
-                    <td>
-                      <div className="factor-tags">
-                        {m.factors?.map((f) => (
-                          <span key={f.id} className="factor-tag">
-                            {FACTOR_TYPES[f.type] || f.type}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td>{m.speed ?? '—'}</td>
-                    <td>{m.stamina ?? '—'}</td>
-                    <td style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {m.memo || '—'}
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-                        <button className="btn btn-ghost btn-sm" onClick={() => { setEditId(m.id); setShowModal(true); }}>
-                          <Pencil />
-                        </button>
-                        <button className="btn btn-ghost btn-sm" onClick={() => {
-                          if (confirm(`「${m.name}」を削除しますか？`)) deleteMutation.mutate(m.id);
-                        }}>
-                          <Trash2 />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <Table>
+            <TableHeader className="bg-slate-50/80">
+              <TableRow>
+                <TableHead className="font-semibold text-slate-700">名前</TableHead>
+                <TableHead className="font-semibold text-slate-700">系統</TableHead>
+                <TableHead className="font-semibold text-slate-700">因子</TableHead>
+                <TableHead className="font-semibold text-slate-700 w-16 text-center">SP</TableHead>
+                <TableHead className="font-semibold text-slate-700 w-16 text-center">ST</TableHead>
+                <TableHead className="font-semibold text-slate-700 min-w-[200px]">メモ</TableHead>
+                <TableHead className="font-semibold text-slate-700 w-24 text-center">操作</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((m) => (
+                <TableRow key={m.id} className="hover:bg-slate-50">
+                  <TableCell className="font-bold text-slate-900">{m.name}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
+                      {m.lineage}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {m.factors && m.factors.length > 0 ? m.factors.map((f) => (
+                        <Badge key={f.id} variant="secondary" className="font-normal text-xs bg-slate-100 text-slate-700">
+                          {FACTOR_TYPES[f.type] || f.type}
+                        </Badge>
+                      )) : (
+                        <span className="text-xs text-slate-400">—</span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-center font-medium">{m.speed ?? '—'}</TableCell>
+                  <TableCell className="text-center font-medium">{m.stamina ?? '—'}</TableCell>
+                  <TableCell className="text-slate-500 text-xs max-w-[200px] truncate">
+                    {m.memo || '—'}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-center gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-slate-900" onClick={() => { setEditId(m.id); setShowModal(true); }}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50" onClick={() => {
+                        if (confirm(`「${m.name}」を削除しますか？`)) deleteMutation.mutate(m.id);
+                      }}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         )}
       </div>
 
       {showModal && (
         <MareModal editId={editId} onClose={() => setShowModal(false)} />
       )}
-    </>
+    </div>
   );
 }
 
@@ -157,8 +190,8 @@ function MareModal({ editId, onClose }: { editId: number | null; onClose: () => 
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = () => {
+    if (!form.name || !form.lineage) return;
     mutation.mutate({
       ...form,
       speed: form.speed !== '' ? Number(form.speed) : null,
@@ -176,65 +209,67 @@ function MareModal({ editId, onClose }: { editId: number | null; onClose: () => 
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>{isEdit ? '繁殖牝馬を編集' : '繁殖牝馬を登録'}</h2>
-          <button className="btn btn-ghost btn-sm" onClick={onClose}><X /></button>
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-xl">{isEdit ? '繁殖牝馬を編集' : '繁殖牝馬を登録'}</DialogTitle>
+        </DialogHeader>
+
+        <div className="grid gap-5 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">名前 <span className="text-rose-500">*</span></Label>
+            <Input id="name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="lineage">系統 <span className="text-rose-500">*</span></Label>
+            <Input id="lineage" required placeholder="例: ノーザンダンサー系" value={form.lineage} onChange={(e) => setForm({ ...form, lineage: e.target.value })} />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 border border-slate-100 bg-slate-50 p-4 rounded-lg">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-slate-500 uppercase">SP</Label>
+              <Input type="number" min={0} max={100} className="bg-white"
+                value={form.speed}
+                onChange={(e) => setForm({ ...form, speed: e.target.value === '' ? '' : Number(e.target.value) })} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-slate-500 uppercase">ST</Label>
+              <Input type="number" min={0} max={100} className="bg-white"
+                value={form.stamina}
+                onChange={(e) => setForm({ ...form, stamina: e.target.value === '' ? '' : Number(e.target.value) })} />
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <Label>因子</Label>
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(FACTOR_TYPES).map(([key, label]) => (
+                <Badge
+                  key={key}
+                  variant={form.factors.includes(key) ? 'default' : 'outline'}
+                  className="cursor-pointer text-sm py-1 px-3 hover:opacity-80 transition-opacity"
+                  onClick={() => toggleFactor(key)}
+                >
+                  {label}
+                </Badge>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="memo">メモ</Label>
+            <Textarea id="memo" value={form.memo} onChange={(e) => setForm({ ...form, memo: e.target.value })} rows={3} />
+          </div>
         </div>
-        <form onSubmit={handleSubmit}>
-          <div className="modal-body">
-            <div className="form-group">
-              <label className="form-label">名前 *</label>
-              <input className="form-input" required value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">系統 *</label>
-              <input className="form-input" required value={form.lineage}
-                placeholder="例: ノーザンダンサー系"
-                onChange={(e) => setForm({ ...form, lineage: e.target.value })} />
-            </div>
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">SP</label>
-                <input className="form-input" type="number" min={0} max={100}
-                  value={form.speed}
-                  onChange={(e) => setForm({ ...form, speed: e.target.value === '' ? '' : Number(e.target.value) })} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">ST</label>
-                <input className="form-input" type="number" min={0} max={100}
-                  value={form.stamina}
-                  onChange={(e) => setForm({ ...form, stamina: e.target.value === '' ? '' : Number(e.target.value) })} />
-              </div>
-            </div>
-            <div className="form-group">
-              <label className="form-label">因子</label>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
-                {Object.entries(FACTOR_TYPES).map(([key, label]) => (
-                  <button key={key} type="button"
-                    className={`btn btn-sm ${form.factors.includes(key) ? 'btn-primary' : 'btn-secondary'}`}
-                    onClick={() => toggleFactor(key)}>
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="form-group">
-              <label className="form-label">メモ</label>
-              <textarea className="form-textarea" value={form.memo}
-                onChange={(e) => setForm({ ...form, memo: e.target.value })} />
-            </div>
-          </div>
-          <div className="modal-footer">
-            <button type="button" className="btn btn-secondary" onClick={onClose}>キャンセル</button>
-            <button type="submit" className="btn btn-primary" disabled={mutation.isPending}>
-              {mutation.isPending ? '保存中...' : isEdit ? '更新' : '登録'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>キャンセル</Button>
+          <Button onClick={handleSubmit} disabled={mutation.isPending || !form.name || !form.lineage}>
+            {mutation.isPending ? '保存中...' : isEdit ? '更新' : '登録'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
