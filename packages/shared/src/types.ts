@@ -150,6 +150,70 @@ export interface BreedingPlan {
 }
 
 // ─────────────────────────────────────────
+// カレンダーイベント
+// ─────────────────────────────────────────
+
+export interface GameEvent {
+  id: number;
+  targetYear: number | null;
+  targetMonth: number;
+  targetWeek: number;
+  title: string;
+  description: string | null;
+  isCompleted: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ─────────────────────────────────────────
+// ギャラリー
+// ─────────────────────────────────────────
+
+export interface GalleryEntry {
+  id: number;
+  title: string;
+  imageUrl: string | null;
+  content: string;
+  eventDate: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ─────────────────────────────────────────
+// 現役馬
+// ─────────────────────────────────────────
+
+export type Surface = 'TURF' | 'DIRT' | 'BOTH';
+export type HorseStatus = 'ACTIVE' | 'RETIRED';
+export type Temperament = 'FIERCE' | 'ROUGH' | 'NORMAL' | 'MILD' | 'SUPER_MILD';
+export type RunningStyle = 'GREAT_ESCAPE' | 'ESCAPE' | 'LEADER' | 'CLOSER' | 'CHASER' | 'VERSATILE';
+
+export interface Racehorse {
+  id: number;
+  name: string;
+  birthYear: number | null;
+  gender: 'MALE' | 'FEMALE';
+  sireId: number | null;
+  sire: { id: number; name: string } | null;
+  damId: number | null;
+  dam: { id: number; name: string } | null;
+  growthType: GrowthType | null;
+  surface: Surface | null;
+  distanceMin: number | null;
+  distanceMax: number | null;
+  temperament: Temperament | null;
+  runningStyle: RunningStyle | null;
+  spirit: EvalMark;
+  health: EvalMark;
+  autoComment: string | null;
+  aiComment: string | null;
+  memo: string | null;
+  status: HorseStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ─────────────────────────────────────────
 // 配合計算レスポンス
 // ─────────────────────────────────────────
 

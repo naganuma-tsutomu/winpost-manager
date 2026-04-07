@@ -1,7 +1,33 @@
 import { Request, Response } from 'express';
-import { PrismaClient, Surface, HorseStatus, GrowthType, Temperament, RunningStyle, EvalMark } from '@prisma/client';
+import { prisma } from '@winpost/database';
+import { z } from 'zod';
 
-const prisma = new PrismaClient();
+const evalMarkEnum = z.enum(['DOUBLE_CIRCLE', 'CIRCLE', 'TRIANGLE', 'NONE']);
+
+const racehorseCreateSchema = z.object({
+  name: z.string().min(1),
+  birthYear: z.number().int().optional().nullable(),
+  gender: z.enum(['MALE', 'FEMALE']),
+  sireId: z.number().int().positive().optional().nullable(),
+  damId: z.number().int().positive().optional().nullable(),
+  growthType: z.enum(['SUPER_EARLY', 'EARLY', 'NORMAL', 'LATE', 'SUPER_LATE']).optional().nullable(),
+  surface: z.enum(['TURF', 'DIRT', 'BOTH']).optional().nullable(),
+  distanceMin: z.number().int().optional().nullable(),
+  distanceMax: z.number().int().optional().nullable(),
+  temperament: z.enum(['FIERCE', 'ROUGH', 'NORMAL', 'MILD', 'SUPER_MILD']).optional().nullable(),
+  runningStyle: z.enum(['GREAT_ESCAPE', 'ESCAPE', 'LEADER', 'CLOSER', 'CHASER', 'VERSATILE']).optional().nullable(),
+  spirit: evalMarkEnum.optional().default('NONE'),
+  health: evalMarkEnum.optional().default('NONE'),
+  autoComment: z.string().optional().nullable(),
+  aiComment: z.string().optional().nullable(),
+  memo: z.string().optional().nullable(),
+  status: z.enum(['ACTIVE', 'RETIRED']).optional().default('ACTIVE'),
+});
+
+const racehorseUpdateSchema = racehorseCreateSchema.partial().extend({
+  name: z.string().min(1),
+  gender: z.enum(['MALE', 'FEMALE']),
+});
 
 // 全件取得
 export const getAllRacehorses = async (req: Request, res: Response) => {
@@ -49,30 +75,14 @@ export const getRacehorseById = async (req: Request, res: Response) => {
 // 作成
 export const createRacehorse = async (req: Request, res: Response) => {
   try {
-    const data = req.body;
-    const racehorse = await prisma.racehorse.create({
-      data: {
-        name: data.name,
-        birthYear: data.birthYear,
-        gender: data.gender,
-        sireId: data.sireId || null,
-        damId: data.damId || null,
-        growthType: data.growthType || null,
-        surface: data.surface || null,
-        distanceMin: data.distanceMin || null,
-        distanceMax: data.distanceMax || null,
-        temperament: data.temperament || null,
-        runningStyle: data.runningStyle || null,
-        spirit: data.spirit || 'NONE',
-        health: data.health || 'NONE',
-        autoComment: data.autoComment || null,
-        aiComment: data.aiComment || null,
-        memo: data.memo || null,
-        status: data.status || 'ACTIVE',
-      },
-    });
+    const data = racehorseCreateSchema.parse(req.body);
+    const racehorse = await prisma.racehorse.create({ data });
     res.status(201).json(racehorse);
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ error: error.errors });
+      return;
+    }
     console.error('Failed to create racehorse:', error);
     res.status(500).json({ error: 'Failed to create racehorse' });
   }
@@ -82,32 +92,17 @@ export const createRacehorse = async (req: Request, res: Response) => {
 export const updateRacehorse = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const data = req.body;
-    
+    const data = racehorseUpdateSchema.parse(req.body);
     const racehorse = await prisma.racehorse.update({
       where: { id: Number(id) },
-      data: {
-        name: data.name,
-        birthYear: data.birthYear,
-        gender: data.gender,
-        sireId: data.sireId,
-        damId: data.damId,
-        growthType: data.growthType,
-        surface: data.surface,
-        distanceMin: data.distanceMin,
-        distanceMax: data.distanceMax,
-        temperament: data.temperament,
-        runningStyle: data.runningStyle,
-        spirit: data.spirit,
-        health: data.health,
-        autoComment: data.autoComment,
-        aiComment: data.aiComment,
-        memo: data.memo,
-        status: data.status,
-      },
+      data,
     });
     res.json(racehorse);
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({ error: error.errors });
+      return;
+    }
     console.error('Failed to update racehorse:', error);
     res.status(500).json({ error: 'Failed to update racehorse' });
   }

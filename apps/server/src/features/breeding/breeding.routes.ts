@@ -33,7 +33,6 @@ breedingRouter.post('/calculate', async (req, res) => {
         include: {
           childLineage: { include: { parentLineage: true } },
           factors: true,
-          pedigreeAsAncestor: false,
         },
       }),
       prisma.mare.findUnique({
@@ -70,7 +69,7 @@ breedingRouter.post('/calculate', async (req, res) => {
       ancestorName: entry.ancestor.name,
       position: entry.position,
       generation: entry.generation,
-      factorTypes: entry.ancestor.factors.map(f => f.type),
+      factorTypes: entry.ancestor.factors.map((f: { type: string }) => f.type),
       childLineageId: entry.ancestor.childLineageId,
       parentLineageId: entry.ancestor.childLineage?.parentLineage?.id ?? 0,
     });
@@ -80,7 +79,7 @@ breedingRouter.post('/calculate', async (req, res) => {
       name: stallion.name,
       childLineageId: stallion.childLineageId,
       parentLineageId: stallion.childLineage?.parentLineage?.id ?? 0,
-      factorTypes: stallion.factors.map(f => f.type),
+      factorTypes: stallion.factors.map((f: { type: string }) => f.type),
       pedigree: stallionPedigree.map(toAncestorEntry),
     };
 
@@ -88,11 +87,11 @@ breedingRouter.post('/calculate', async (req, res) => {
       id: mare.id,
       name: mare.name,
       lineage: mare.lineage,
-      factorTypes: mare.factors.map(f => f.type),
+      factorTypes: mare.factors.map((f: { type: string }) => f.type),
       pedigree: marePedigree.map(toAncestorEntry),
     };
 
-    const nicksTable: NicksRelation[] = nicksRelations.map(n => ({
+    const nicksTable: NicksRelation[] = nicksRelations.map((n: { lineageAId: number; lineageBId: number; level: number }) => ({
       lineageAId: n.lineageAId,
       lineageBId: n.lineageBId,
       level: n.level,

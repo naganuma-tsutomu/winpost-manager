@@ -140,8 +140,12 @@ function getGen3Positions(): string[] {
 function buildAncestorSet(pedigree: AncestorEntry[]): Map<number, AncestorEntry[]> {
   const map = new Map<number, AncestorEntry[]>();
   for (const e of pedigree) {
-    if (!map.has(e.ancestorId)) map.set(e.ancestorId, []);
-    map.get(e.ancestorId)!.push(e);
+    const existing = map.get(e.ancestorId);
+    if (existing) {
+      existing.push(e);
+    } else {
+      map.set(e.ancestorId, [e]);
+    }
   }
   return map;
 }
@@ -234,7 +238,8 @@ export function calcInbreed(
 
   for (const [ancestorId, sireEntries] of sireMap) {
     if (!damMap.has(ancestorId)) continue;
-    const damEntries = damMap.get(ancestorId)!;
+    const damEntries = damMap.get(ancestorId);
+    if (!damEntries) continue;
 
     const result: InbreedResult = {
       ancestorId,
@@ -345,7 +350,8 @@ export function calcLineBreed(
     if (!parentLineageCounts.has(e.parentLineageId)) {
       parentLineageCounts.set(e.parentLineageId, { ids: new Set(), count: 0 });
     }
-    const entry = parentLineageCounts.get(e.parentLineageId)!;
+    const entry = parentLineageCounts.get(e.parentLineageId);
+    if (!entry) continue;
     entry.ids.add(e.childLineageId);
     entry.count++;
   }
@@ -432,7 +438,7 @@ export function calcVitalityComplement(
     if (hasFamousSire || hasFamousMare || isDifferentLine) completedCount++;
   }
 
-  // 完全型: 8頭全員が条件を満たす
+  // 完全型: 3代前8頭すべてが存在する（各カテゴリは問わない）
   if (completedCount === 8) {
     theories.push({
       type: 'VITALITY_COMPLETE',
@@ -464,6 +470,17 @@ export function calcVitalityComplement(
         subPower: famousMareCount,
         risk: 0,
         tags: ['活力補完', '名牝型'],
+      });
+    }
+    if (differentLineCount >= 2) {
+      theories.push({
+        type: 'VITALITY_DIFFERENT_LINE',
+        label: '異系血脈型活力補完',
+        detail: `3代前に異系血脈の先祖が${differentLineCount}頭`,
+        power: differentLineCount,
+        subPower: 1,
+        risk: 0,
+        tags: ['活力補完', '異系血脈型'],
       });
     }
   }

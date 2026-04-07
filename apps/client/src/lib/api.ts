@@ -9,6 +9,8 @@ import type {
   NicksRelationRecord,
   BreedingPlan,
   BreedingCalculateResponse,
+  GameEvent,
+  GalleryEntry,
 } from '@winpost/shared';
 
 const API_BASE = '/api';
@@ -93,16 +95,16 @@ export const api = {
   // カレンダー・TODO
   calendar: {
     events: {
-      list: () => request<any[]>('/calendar/events'),
-      create: (data: unknown) => request<any>('/calendar/events', { method: 'POST', body: JSON.stringify(data) }),
-      update: (id: number, data: unknown) => request<any>(`/calendar/events/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+      list: () => request<GameEvent[]>('/calendar/events'),
+      create: (data: unknown) => request<GameEvent>('/calendar/events', { method: 'POST', body: JSON.stringify(data) }),
+      update: (id: number, data: unknown) => request<GameEvent>(`/calendar/events/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
       delete: (id: number) => request<void>(`/calendar/events/${id}`, { method: 'DELETE' }),
     }
   },
   // ギャラリー
   gallery: {
-    list: () => request<any[]>('/gallery'),
-    create: async (formData: FormData) => {
+    list: () => request<GalleryEntry[]>('/gallery'),
+    create: async (formData: FormData): Promise<GalleryEntry> => {
       const res = await fetch('/api/gallery', {
         method: 'POST',
         body: formData,
@@ -111,7 +113,7 @@ export const api = {
         const error = await res.json().catch(() => ({ error: 'リクエストに失敗しました' }));
         throw new Error(error.error || `HTTP ${res.status}`);
       }
-      return res.json();
+      return res.json() as Promise<GalleryEntry>;
     },
     delete: (id: number) => request<void>(`/gallery/${id}`, { method: 'DELETE' }),
   }

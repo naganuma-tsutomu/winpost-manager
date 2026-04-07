@@ -20,6 +20,39 @@ const upload = multer({
   },
 });
 
+// OCR サービスへのリクエストを中継する共通ヘルパー
+async function proxyToOcr(
+  endpoint: string,
+  file: Express.Multer.File,
+  extraFields?: Record<string, string>,
+) {
+  const form = new FormData();
+  form.append('file', file.buffer, {
+    filename: file.originalname || 'screenshot.png',
+    contentType: file.mimetype,
+  });
+  if (extraFields) {
+    for (const [key, value] of Object.entries(extraFields)) {
+      form.append(key, value);
+    }
+  }
+  return fetch(`${OCR_SERVICE_URL}${endpoint}`, {
+    method: 'POST',
+    body: form,
+    headers: form.getHeaders(),
+    signal: AbortSignal.timeout(60_000),
+  });
+}
+
+function handleOcrError(e: unknown, res: Response): void {
+  console.error('OCR 中継エラー:', e);
+  if (e instanceof Error && e.name === 'TimeoutError') {
+    res.status(504).json({ error: 'OCR 処理がタイムアウトしました' });
+  } else {
+    res.status(503).json({ error: 'OCR サービスに接続できません' });
+  }
+}
+
 // ─────────────────────────────────────────
 // GET /api/ocr/health  → OCR サービスの状態確認
 // ─────────────────────────────────────────
@@ -30,11 +63,10 @@ ocrRouter.get('/health', async (_req: Request, res: Response) => {
     });
     const data = await resp.json() as Record<string, unknown>;
     res.json({ ...data, url: OCR_SERVICE_URL });
-  } catch (e) {
+  } catch {
     res.status(503).json({
       status: 'unavailable',
       error: 'OCR サービスに接続できません',
-      url: OCR_SERVICE_URL,
     });
   }
 });
@@ -49,7 +81,7 @@ ocrRouter.get('/ready', async (_req: Request, res: Response) => {
     });
     const data = await resp.json();
     res.json(data);
-  } catch (e) {
+  } catch {
     res.status(503).json({ ready: false, error: 'OCR サービス未応答' });
   }
 });
@@ -62,38 +94,17 @@ ocrRouter.post('/foal', upload.single('file'), async (req: Request, res: Respons
     res.status(400).json({ error: '画像ファイルが必要です' });
     return;
   }
-
   try {
-    const form = new FormData();
-    form.append('file', req.file.buffer, {
-      filename: req.file.originalname || 'screenshot.png',
-      contentType: req.file.mimetype,
-    });
-    form.append('mode', 'foal');
-
-    const resp = await fetch(`${OCR_SERVICE_URL}/ocr/foal`, {
-      method: 'POST',
-      body: form,
-      headers: form.getHeaders(),
-      signal: AbortSignal.timeout(60_000), // OCR は最大60秒
-    });
-
+    const resp = await proxyToOcr('/ocr/foal', req.file, { mode: 'foal' });
     if (!resp.ok) {
       const err = await resp.text();
       console.error('OCR サービスエラー:', err);
       res.status(resp.status).json({ error: 'OCR サービスでエラーが発生しました', detail: err });
       return;
     }
-
-    const data = await resp.json();
-    res.json(data);
-  } catch (e: any) {
-    console.error('OCR 中継エラー:', e);
-    if (e.name === 'TimeoutError') {
-      res.status(504).json({ error: 'OCR 処理がタイムアウトしました' });
-    } else {
-      res.status(503).json({ error: 'OCR サービスに接続できません。サービスが起動しているか確認してください。' });
-    }
+    res.json(await resp.json());
+  } catch (e) {
+    handleOcrError(e, res);
   }
 });
 
@@ -105,34 +116,16 @@ ocrRouter.post('/stallion', upload.single('file'), async (req: Request, res: Res
     res.status(400).json({ error: '画像ファイルが必要です' });
     return;
   }
-
   try {
-    const form = new FormData();
-    form.append('file', req.file.buffer, {
-      filename: req.file.originalname || 'screenshot.png',
-      contentType: req.file.mimetype,
-    });
-
-    const resp = await fetch(`${OCR_SERVICE_URL}/ocr/stallion`, {
-      method: 'POST',
-      body: form,
-      headers: form.getHeaders(),
-      signal: AbortSignal.timeout(60_000),
-    });
-
+    const resp = await proxyToOcr('/ocr/stallion', req.file);
     if (!resp.ok) {
       const err = await resp.text();
       res.status(resp.status).json({ error: 'OCR サービスでエラーが発生しました', detail: err });
       return;
     }
-
     res.json(await resp.json());
-  } catch (e: any) {
-    if (e.name === 'TimeoutError') {
-      res.status(504).json({ error: 'OCR 処理がタイムアウトしました' });
-    } else {
-      res.status(503).json({ error: 'OCR サービスに接続できません。サービスが起動しているか確認してください。' });
-    }
+  } catch (e) {
+    handleOcrError(e, res);
   }
 });
 
@@ -144,34 +137,16 @@ ocrRouter.post('/mare', upload.single('file'), async (req: Request, res: Respons
     res.status(400).json({ error: '画像ファイルが必要です' });
     return;
   }
-
   try {
-    const form = new FormData();
-    form.append('file', req.file.buffer, {
-      filename: req.file.originalname || 'screenshot.png',
-      contentType: req.file.mimetype,
-    });
-
-    const resp = await fetch(`${OCR_SERVICE_URL}/ocr/mare`, {
-      method: 'POST',
-      body: form,
-      headers: form.getHeaders(),
-      signal: AbortSignal.timeout(60_000),
-    });
-
+    const resp = await proxyToOcr('/ocr/mare', req.file);
     if (!resp.ok) {
       const err = await resp.text();
       res.status(resp.status).json({ error: 'OCR サービスでエラーが発生しました', detail: err });
       return;
     }
-
     res.json(await resp.json());
-  } catch (e: any) {
-    if (e.name === 'TimeoutError') {
-      res.status(504).json({ error: 'OCR 処理がタイムアウトしました' });
-    } else {
-      res.status(503).json({ error: 'OCR サービスに接続できません。サービスが起動しているか確認してください。' });
-    }
+  } catch (e) {
+    handleOcrError(e, res);
   }
 });
 
@@ -183,31 +158,16 @@ ocrRouter.post('/raw', upload.single('file'), async (req: Request, res: Response
     res.status(400).json({ error: '画像ファイルが必要です' });
     return;
   }
-
   try {
-    const form = new FormData();
-    form.append('file', req.file.buffer, {
-      filename: req.file.originalname || 'screenshot.png',
-      contentType: req.file.mimetype,
-    });
-
-    const resp = await fetch(`${OCR_SERVICE_URL}/ocr/raw`, {
-      method: 'POST',
-      body: form,
-      headers: form.getHeaders(),
-      signal: AbortSignal.timeout(60_000),
-    });
-
+    const resp = await proxyToOcr('/ocr/raw', req.file);
     if (!resp.ok) {
       const err = await resp.text();
       console.error('OCR サービスエラー (raw):', err);
       res.status(resp.status).json({ error: 'OCR サービスでエラーが発生しました', detail: err });
       return;
     }
-
-    const data = await resp.json();
-    res.json(data);
+    res.json(await resp.json());
   } catch (e) {
-    res.status(503).json({ error: 'OCR サービスに接続できません' });
+    handleOcrError(e, res);
   }
 });
