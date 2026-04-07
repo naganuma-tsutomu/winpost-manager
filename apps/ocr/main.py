@@ -1,14 +1,13 @@
 """
 WinPost OCR Service
 ウイニングポスト10 2025 のゲーム画面をEasyOCRで解析し、
-幼駒評価データを構造化して返す。
+幼駒評価データ・種牡馬情報・繁殖牝馬情報を構造化して返す。
 """
 from __future__ import annotations
 
 import io
 import logging
 import re
-from pathlib import Path
 from typing import Optional
 
 import easyocr
@@ -67,14 +66,48 @@ class FoalData(BaseModel):
     memo: Optional[str] = None
 
 
+class StallionData(BaseModel):
+    """種牡馬情報画面から抽出した構造化データ"""
+    name: Optional[str] = None
+    lineageName: Optional[str] = None     # 系統名（テキスト）
+    speed: Optional[int] = None
+    stamina: Optional[int] = None
+    power: Optional[int] = None
+    guts: Optional[int] = None           # 勝負根性
+    wisdom: Optional[int] = None         # 賢さ
+    health: Optional[int] = None         # 健康
+    factors: list[str] = []              # SPEED / STAMINA / POWER / etc.
+
+
+class MareData(BaseModel):
+    """繁殖牝馬情報画面から抽出した構造化データ"""
+    name: Optional[str] = None
+    lineageName: Optional[str] = None     # 系統名（テキスト）
+    speed: Optional[int] = None
+    stamina: Optional[int] = None
+    factors: list[str] = []
+
+
 class OcrResponse(BaseModel):
     raw: list[OcrRawResult]
     foal: FoalData
     confidence: float                     # 全体信頼度 (0.0〜1.0)
 
 
+class StallionOcrResponse(BaseModel):
+    raw: list[OcrRawResult]
+    stallion: StallionData
+    confidence: float
+
+
+class MareOcrResponse(BaseModel):
+    raw: list[OcrRawResult]
+    mare: MareData
+    confidence: float
+
+
 # ─────────────────────────────────────────
-# 印・成長型のパターン
+# 印・成長型のパターン（共通）
 # ─────────────────────────────────────────
 
 EVAL_MARK_PATTERNS = {
@@ -99,6 +132,30 @@ GENDER_PATTERNS = {
 # WP10のゲーム年度 (1983〜)
 YEAR_PATTERN = re.compile(r"(19[89]\d|20[0-9]\d)年")
 
+# 因子パターン: OCR上のテキストとenumキーのマッピング
+FACTOR_PATTERNS: list[tuple[re.Pattern, str]] = [
+    (re.compile(r"大種牡馬|大種牡"), "GREAT_SIRE"),
+    (re.compile(r"名種牡馬|名種牡"), "FAMOUS_SIRE"),
+    (re.compile(r"スピード"), "SPEED"),
+    (re.compile(r"スタミナ"), "STAMINA"),
+    (re.compile(r"パワー"), "POWER"),
+    (re.compile(r"根性|勝負根性"), "TENACITY"),
+    (re.compile(r"瞬発力"), "AGILITY"),
+    (re.compile(r"健康"), "HEALTH"),
+    (re.compile(r"精神力"), "SPIRIT"),
+    (re.compile(r"賢さ"), "WISDOM"),
+]
+
+# 能力値ラベルのパターン
+ABILITY_LABEL_PATTERNS: list[tuple[re.Pattern, str]] = [
+    (re.compile(r"スピード"), "speed"),
+    (re.compile(r"スタミナ"), "stamina"),
+    (re.compile(r"パワー"), "power"),
+    (re.compile(r"勝負根性|根性"), "guts"),
+    (re.compile(r"瞬発力|賢さ"), "wisdom"),
+    (re.compile(r"健康"), "health"),
+]
+
 
 def detect_eval_mark(text: str) -> Optional[str]:
     for mark, pat in EVAL_MARK_PATTERNS.items():
@@ -121,8 +178,66 @@ def detect_gender(text: str) -> Optional[str]:
     return None
 
 
+def extract_number_near(texts: list[str], index: int, window: int = 3) -> Optional[int]:
+    """指定インデックスの近傍テキストから数値(0-100)を抽出する"""
+    for j in range(index, min(len(texts), index + window + 1)):
+        m = re.search(r"\b([0-9]{1,3})\b", texts[j])
+        if m:
+            val = int(m.group(1))
+            if 0 <= val <= 100:
+                return val
+    return None
+
+
+def detect_factors(all_texts: list[str]) -> list[str]:
+    """因子テキストを検出してenumキーのリストを返す（重複なし）"""
+    # 因子欄は「〇〇因子」という形式
+    factor_section = False
+    detected: set[str] = set()
+
+    for text in all_texts:
+        # 「因子」という単語が含まれるブロックに入ったらファクター検出モード
+        if "因子" in text:
+            factor_section = True
+        if factor_section:
+            for pat, key in FACTOR_PATTERNS:
+                if pat.search(text):
+                    detected.add(key)
+
+    # セクション未検出の場合は全体から探す
+    if not detected:
+        for text in all_texts:
+            for pat, key in FACTOR_PATTERNS:
+                if pat.search(text) and "因子" in text:
+                    detected.add(key)
+
+    return list(detected)
+
+
+def detect_lineage_name(all_texts: list[str]) -> Optional[str]:
+    """系統名を抽出する。「〇〇系」または「系統」ラベルの近傍テキストを探す"""
+    lineage_pattern = re.compile(r"^(.{1,10})系$")
+    lineage_label = re.compile(r"系統|血統系統")
+
+    # 「〇〇系」という形式を直接探す
+    for text in all_texts:
+        m = lineage_pattern.match(text.strip())
+        if m:
+            return m.group(0).strip()
+
+    # 「系統」ラベルの次のテキストを探す
+    for i, text in enumerate(all_texts):
+        if lineage_label.search(text):
+            if i + 1 < len(all_texts):
+                candidate = all_texts[i + 1].strip()
+                if 1 < len(candidate) <= 15:
+                    return candidate
+
+    return None
+
+
 # ─────────────────────────────────────────
-# OCR テキストから幼駒データを抽出する
+# OCR テキストから各種データを抽出する
 # ─────────────────────────────────────────
 
 def parse_foal_data(ocr_results: list[tuple]) -> FoalData:
@@ -130,7 +245,6 @@ def parse_foal_data(ocr_results: list[tuple]) -> FoalData:
     EasyOCR の結果リスト（[bbox, text, conf]）から
     ウイニングポスト10の幼駒評価シートを解析する。
     """
-    # テキスト全体を結合
     all_texts = [r[1] for r in ocr_results]
     full_text = " ".join(all_texts)
 
@@ -159,7 +273,6 @@ def parse_foal_data(ocr_results: list[tuple]) -> FoalData:
             pass
 
     # ─── 評価印の検出 ───
-    # WP10 では「河童木」「美香」などのラベル付き行に印が続く
     kappa_found = False
     mika_found = False
 
@@ -169,7 +282,6 @@ def parse_foal_data(ocr_results: list[tuple]) -> FoalData:
         is_mika_row = re.search(r"美香|みか|ﾐｶ", lower_raw)
 
         if is_kappa_row and not kappa_found:
-            # 同行または次行に印があるか確認
             combined = " ".join(all_texts[max(0, i-1): min(len(all_texts), i+3)])
             foal.kappaMark = detect_eval_mark(combined) or "NONE"
             kappa_found = True
@@ -179,7 +291,6 @@ def parse_foal_data(ocr_results: list[tuple]) -> FoalData:
             foal.mikaMark = detect_eval_mark(combined) or "NONE"
             mika_found = True
 
-    # 印が2個指定されていれば順に割り当て（ラベルなし画像の場合）
     if not kappa_found or not mika_found:
         marks_found = []
         for raw in all_texts:
@@ -192,7 +303,6 @@ def parse_foal_data(ocr_results: list[tuple]) -> FoalData:
             foal.mikaMark = marks_found[1]
 
     # ─── 父馬名・母馬名 ───
-    # "父:" "母:" などのラベルを探す
     for i, raw in enumerate(all_texts):
         sire_match = re.search(r"^父\s*[:：]?\s*(.+)$", raw.strip())
         if sire_match:
@@ -208,19 +318,15 @@ def parse_foal_data(ocr_results: list[tuple]) -> FoalData:
             if i + 1 < len(all_texts):
                 foal.damName = all_texts[i + 1].strip()
 
-    # リーディング等のノイズが名前に混ざったら省く
     if foal.sireName and foal.sireName in ["リーディング", "ーディング", "ディング"]:
         foal.sireName = None
 
     # ─── 馬名 ───
-    # ゲーム内では幼駒に名前がついている場合がある（カタカナ or 漢字）＋ 誕生年の数字（母名＋年度など）
-    # 除外ワード（UIのテキスト）
     exclude_words = {"評価額", "取引額", "基本能力", "瞬発力", "柔軟性", "精神力", "スピード", "勝負根性", "パワー", "健康", "賢さ", "ウマーソナリティ", "未獲得", "河童木", "育成中", "詳細", "血統", "能力", "北口"}
-    
-    # 馬名のパターン: カタカナ主体 + 数字(末尾) または2文字以上の漢字・カタカナ (UIキーワード以外)
+
     katakana_num_pattern = re.compile(r"^[\u30A0-\u30FFー]+[0-9０-９]{0,4}$")
     general_name_pattern = re.compile(r"^[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]{2,12}$")
-    
+
     for t in all_texts:
         clean_t = t.strip()
         if clean_t in exclude_words:
@@ -230,12 +336,11 @@ def parse_foal_data(ocr_results: list[tuple]) -> FoalData:
         if katakana_num_pattern.match(clean_t) or general_name_pattern.match(clean_t):
             foal.name = clean_t
             break
-            
+
     # ─── 誕生年の簡易推定 ───
     if not foal.birthYear and foal.name:
         m = re.search(r"([0-9０-９]{2})$", foal.name)
         if m:
-            # 全角数字を半角に変換
             yy_str = m.group(1).translate(str.maketrans('０１２３４５６７８９', '0123456789'))
             yy = int(yy_str)
             foal.birthYear = 1900 + yy if yy >= 70 else 2000 + yy
@@ -251,10 +356,138 @@ def parse_foal_data(ocr_results: list[tuple]) -> FoalData:
     return foal
 
 
+def parse_stallion_data(ocr_results: list[tuple]) -> StallionData:
+    """
+    EasyOCR の結果から種牡馬情報画面を解析する。
+    抽出対象: 馬名, 系統名, 能力値(スピード/スタミナ/パワー/根性/賢さ/健康), 因子
+    """
+    all_texts = [r[1] for r in ocr_results]
+    stallion = StallionData()
+
+    # ─── 馬名 ───
+    stallion.name = _extract_horse_name(all_texts)
+
+    # ─── 系統名 ───
+    stallion.lineageName = detect_lineage_name(all_texts)
+
+    # ─── 能力値 ───
+    ability: dict[str, Optional[int]] = {
+        "speed": None, "stamina": None, "power": None,
+        "guts": None, "wisdom": None, "health": None,
+    }
+    for i, text in enumerate(all_texts):
+        for pat, key in ABILITY_LABEL_PATTERNS:
+            if pat.search(text) and ability[key] is None:
+                val = extract_number_near(all_texts, i)
+                if val is not None:
+                    ability[key] = val
+
+    stallion.speed = ability["speed"]
+    stallion.stamina = ability["stamina"]
+    stallion.power = ability["power"]
+    stallion.guts = ability["guts"]
+    stallion.wisdom = ability["wisdom"]
+    stallion.health = ability["health"]
+
+    # ─── 因子 ───
+    stallion.factors = detect_factors(all_texts)
+
+    return stallion
+
+
+def parse_mare_data(ocr_results: list[tuple]) -> MareData:
+    """
+    EasyOCR の結果から繁殖牝馬情報画面を解析する。
+    抽出対象: 馬名, 系統名, スピード/スタミナ, 因子
+    """
+    all_texts = [r[1] for r in ocr_results]
+    mare = MareData()
+
+    # ─── 馬名 ───
+    mare.name = _extract_horse_name(all_texts)
+
+    # ─── 系統名 ───
+    mare.lineageName = detect_lineage_name(all_texts)
+
+    # ─── 能力値（スピード・スタミナのみ） ───
+    for i, text in enumerate(all_texts):
+        if re.search(r"スピード", text) and mare.speed is None:
+            mare.speed = extract_number_near(all_texts, i)
+        if re.search(r"スタミナ", text) and mare.stamina is None:
+            mare.stamina = extract_number_near(all_texts, i)
+
+    # ─── 因子 ───
+    mare.factors = detect_factors(all_texts)
+
+    return mare
+
+
+def _extract_horse_name(all_texts: list[str]) -> Optional[str]:
+    """
+    馬名を抽出する共通関数。
+    UIキーワードを除いたカタカナ・漢字混じりテキストを馬名と判断する。
+    """
+    exclude_words = {
+        "評価額", "取引額", "基本能力", "瞬発力", "柔軟性", "精神力",
+        "スピード", "勝負根性", "パワー", "健康", "賢さ", "スタミナ",
+        "ウマーソナリティ", "未獲得", "河童木", "育成中", "詳細",
+        "血統", "能力", "北口", "種牡馬", "繁殖牝馬", "幼駒",
+        "因子", "系統", "牡", "牝", "去",
+    }
+    katakana_num_pattern = re.compile(r"^[\u30A0-\u30FFー]+[0-9０-９]{0,4}$")
+    general_name_pattern = re.compile(r"^[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]{2,12}$")
+
+    for t in all_texts:
+        clean_t = t.strip()
+        if clean_t in exclude_words:
+            continue
+        if len(clean_t) < 2:
+            continue
+        if katakana_num_pattern.match(clean_t) or general_name_pattern.match(clean_t):
+            return clean_t
+    return None
+
+
+# ─────────────────────────────────────────
+# 共通ヘルパー: 画像読み込み + OCR 実行
+# ─────────────────────────────────────────
+
+async def run_ocr(file: UploadFile) -> tuple[list[tuple], list[OcrRawResult], float]:
+    content_type = file.content_type or ""
+    if not content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="画像ファイルを送信してください")
+
+    data = await file.read()
+    try:
+        img = Image.open(io.BytesIO(data)).convert("RGB")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"画像の読み込みに失敗しました: {e}")
+
+    img_array = np.array(img)
+    reader = get_reader()
+    try:
+        results = reader.readtext(img_array, detail=1, paragraph=False)
+    except Exception as e:
+        logger.error(f"OCR エラー: {e}")
+        raise HTTPException(status_code=500, detail=f"OCR 処理中にエラーが発生しました: {e}")
+
+    avg_conf = sum(r[2] for r in results) / len(results) if results else 0.0
+    raw_list = [
+        OcrRawResult(
+            text=r[1],
+            confidence=round(r[2], 4),
+            bbox=[list(map(int, pt)) for pt in r[0]],
+        )
+        for r in results
+    ]
+
+    logger.info(f"OCR 完了: {len(results)} テキストブロック検出, 信頼度={avg_conf:.3f}")
+    return results, raw_list, round(avg_conf, 4)
+
+
 # ─────────────────────────────────────────
 # API エンドポイント
 # ─────────────────────────────────────────
-
 
 @app.get("/health")
 def health_check():
@@ -270,7 +503,6 @@ def ready_check():
 @app.post("/ocr/foal", response_model=OcrResponse)
 async def ocr_foal(
     file: UploadFile = File(..., description="ゲームのスクリーンショット画像"),
-    mode: str = Form(default="auto", description="解析モード: auto / foal"),
 ):
     """
     幼駒評価シートの画像をアップロードして OCR 解析する。
@@ -278,49 +510,39 @@ async def ocr_foal(
     - 成長型、性別
     - 父馬名・母馬名
     """
-    # ファイル形式チェック
-    content_type = file.content_type or ""
-    if not content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="画像ファイルを送信してください")
-
-    # 読み込み
-    data = await file.read()
-    try:
-        img = Image.open(io.BytesIO(data)).convert("RGB")
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"画像の読み込みに失敗しました: {e}")
-
-    img_array = np.array(img)
-
-    # OCR 実行
-    reader = get_reader()
-    try:
-        results = reader.readtext(img_array, detail=1, paragraph=False)
-    except Exception as e:
-        logger.error(f"OCR エラー: {e}")
-        raise HTTPException(status_code=500, detail=f"OCR 処理中にエラーが発生しました: {e}")
-
-    # 信頼度計算
-    if results:
-        avg_conf = sum(r[2] for r in results) / len(results)
-    else:
-        avg_conf = 0.0
-
-    # 構造化
-    raw_list = [
-        OcrRawResult(
-            text=r[1],
-            confidence=round(r[2], 4),
-            bbox=[list(map(int, pt)) for pt in r[0]],
-        )
-        for r in results
-    ]
-
+    results, raw_list, avg_conf = await run_ocr(file)
     foal = parse_foal_data(results)
+    return OcrResponse(raw=raw_list, foal=foal, confidence=avg_conf)
 
-    logger.info(f"OCR 完了: {len(results)} テキストブロック検出, 信頼度={avg_conf:.3f}")
 
-    return OcrResponse(raw=raw_list, foal=foal, confidence=round(avg_conf, 4))
+@app.post("/ocr/stallion", response_model=StallionOcrResponse)
+async def ocr_stallion(
+    file: UploadFile = File(..., description="種牡馬情報画面のスクリーンショット"),
+):
+    """
+    種牡馬情報画面の画像をアップロードして OCR 解析する。
+    - 馬名、系統名
+    - 能力値（スピード/スタミナ/パワー/勝負根性/賢さ/健康）
+    - 因子
+    """
+    results, raw_list, avg_conf = await run_ocr(file)
+    stallion = parse_stallion_data(results)
+    return StallionOcrResponse(raw=raw_list, stallion=stallion, confidence=avg_conf)
+
+
+@app.post("/ocr/mare", response_model=MareOcrResponse)
+async def ocr_mare(
+    file: UploadFile = File(..., description="繁殖牝馬情報画面のスクリーンショット"),
+):
+    """
+    繁殖牝馬情報画面の画像をアップロードして OCR 解析する。
+    - 馬名、系統名
+    - 能力値（スピード/スタミナ）
+    - 因子
+    """
+    results, raw_list, avg_conf = await run_ocr(file)
+    mare = parse_mare_data(results)
+    return MareOcrResponse(raw=raw_list, mare=mare, confidence=avg_conf)
 
 
 @app.post("/ocr/raw")

@@ -98,6 +98,84 @@ ocrRouter.post('/foal', upload.single('file'), async (req: Request, res: Respons
 });
 
 // ─────────────────────────────────────────
+// POST /api/ocr/stallion  → 種牡馬情報画面解析
+// ─────────────────────────────────────────
+ocrRouter.post('/stallion', upload.single('file'), async (req: Request, res: Response) => {
+  if (!req.file) {
+    res.status(400).json({ error: '画像ファイルが必要です' });
+    return;
+  }
+
+  try {
+    const form = new FormData();
+    form.append('file', req.file.buffer, {
+      filename: req.file.originalname || 'screenshot.png',
+      contentType: req.file.mimetype,
+    });
+
+    const resp = await fetch(`${OCR_SERVICE_URL}/ocr/stallion`, {
+      method: 'POST',
+      body: form,
+      headers: form.getHeaders(),
+      signal: AbortSignal.timeout(60_000),
+    });
+
+    if (!resp.ok) {
+      const err = await resp.text();
+      res.status(resp.status).json({ error: 'OCR サービスでエラーが発生しました', detail: err });
+      return;
+    }
+
+    res.json(await resp.json());
+  } catch (e: any) {
+    if (e.name === 'TimeoutError') {
+      res.status(504).json({ error: 'OCR 処理がタイムアウトしました' });
+    } else {
+      res.status(503).json({ error: 'OCR サービスに接続できません。サービスが起動しているか確認してください。' });
+    }
+  }
+});
+
+// ─────────────────────────────────────────
+// POST /api/ocr/mare  → 繁殖牝馬情報画面解析
+// ─────────────────────────────────────────
+ocrRouter.post('/mare', upload.single('file'), async (req: Request, res: Response) => {
+  if (!req.file) {
+    res.status(400).json({ error: '画像ファイルが必要です' });
+    return;
+  }
+
+  try {
+    const form = new FormData();
+    form.append('file', req.file.buffer, {
+      filename: req.file.originalname || 'screenshot.png',
+      contentType: req.file.mimetype,
+    });
+
+    const resp = await fetch(`${OCR_SERVICE_URL}/ocr/mare`, {
+      method: 'POST',
+      body: form,
+      headers: form.getHeaders(),
+      signal: AbortSignal.timeout(60_000),
+    });
+
+    if (!resp.ok) {
+      const err = await resp.text();
+      res.status(resp.status).json({ error: 'OCR サービスでエラーが発生しました', detail: err });
+      return;
+    }
+
+    res.json(await resp.json());
+  } catch (e: any) {
+    if (e.name === 'TimeoutError') {
+      res.status(504).json({ error: 'OCR 処理がタイムアウトしました' });
+    } else {
+      res.status(503).json({ error: 'OCR サービスに接続できません。サービスが起動しているか確認してください。' });
+    }
+  }
+});
+
+// ─────────────────────────────────────────
 // POST /api/ocr/raw  → 生テキスト取得（デバッグ用）
 // ─────────────────────────────────────────
 ocrRouter.post('/raw', upload.single('file'), async (req: Request, res: Response) => {
