@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
+import type { Stallion } from '@winpost/shared';
 import { Save, Info } from 'lucide-react';
 
 /** 血統表の位置一覧 (最大4代) */
@@ -37,19 +38,22 @@ export function PedigreeEditorPage() {
   const { data: mares = [] } = useQuery({ queryKey: ['mares'], queryFn: api.mares.list });
 
   // 選択した馬の血統データをロード
-  const { isLoading: pLoading } = useQuery({
+  const { data: pedigreeData, isLoading: pLoading } = useQuery({
     queryKey: ['pedigree', horseType, horseId],
     queryFn: () => api.breeding.getPedigree(horseType, horseId!),
     enabled: !!horseId,
-    onSuccess: (data: any[]) => {
-      const map: PedigreeEntries = {};
-      for (const e of data) {
-        map[e.position] = { ancestorId: e.ancestorId, ancestorName: e.ancestor?.name ?? '' };
-      }
-      setEntries(map);
-      setSaved(false);
-    },
-  } as any);
+  });
+
+  // React Query v5: onSuccess は useEffect で代替
+  useEffect(() => {
+    if (!pedigreeData) return;
+    const map: PedigreeEntries = {};
+    for (const e of pedigreeData) {
+      map[e.position] = { ancestorId: e.ancestorId, ancestorName: e.ancestor?.name ?? '' };
+    }
+    setEntries(map);
+    setSaved(false);
+  }, [pedigreeData]);
 
   const saveMutation = useMutation({
     mutationFn: () => {
@@ -101,7 +105,7 @@ export function PedigreeEditorPage() {
             <div className="form-group" style={{ margin: 0 }}>
               <label className="form-label">対象</label>
               <select className="form-select" value={horseType}
-                onChange={e => { setHorseType(e.target.value as any); setHorseId(null); setEntries({}); }}>
+                onChange={e => { setHorseType(e.target.value as 'stallion' | 'mare'); setHorseId(null); setEntries({}); }}>
                 <option value="stallion">種牡馬</option>
                 <option value="mare">繁殖牝馬</option>
               </select>
@@ -111,7 +115,7 @@ export function PedigreeEditorPage() {
               <select className="form-select" value={horseId ?? ''}
                 onChange={e => { setHorseId(e.target.value ? Number(e.target.value) : null); setEntries({}); }}>
                 <option value="">── 選択してください ──</option>
-                {horses.map((h: any) => (
+                {horses.map((h: { id: number; name: string }) => (
                   <option key={h.id} value={h.id}>{h.name}</option>
                 ))}
               </select>
@@ -186,7 +190,7 @@ function PedigreeCell({
 }: {
   posInfo: typeof PEDIGREE_POSITIONS[0];
   value?: { ancestorId: number; ancestorName: string };
-  stallions: any[];
+  stallions: Stallion[];
   onChange: (id: number, name: string) => void;
   onClear: () => void;
 }) {
@@ -220,11 +224,11 @@ function PedigreeCell({
         value={value?.ancestorId ?? ''}
         onChange={e => {
           if (!e.target.value) { onClear(); return; }
-          const s = stallions.find((s: any) => s.id === Number(e.target.value));
+          const s = stallions.find((s) => s.id === Number(e.target.value));
           if (s) onChange(s.id, s.name);
         }}>
         <option value="">── 未登録 ──</option>
-        {stallions.map((s: any) => (
+        {stallions.map((s) => (
           <option key={s.id} value={s.id}>{s.name}</option>
         ))}
       </select>

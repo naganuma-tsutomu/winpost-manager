@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
+import type { BreedingPlan } from '@winpost/shared';
 import { Plus, Trash2, CheckCircle, XCircle, Clock, Calendar } from 'lucide-react';
 
 const PLAN_STATUS_CONFIG = {
@@ -19,11 +20,11 @@ function genYears() {
 }
 
 function PlanCard({ plan, onStatusChange, onDelete }: {
-  plan: any;
+  plan: BreedingPlan;
   onStatusChange: (id: number, status: string) => void;
   onDelete: (id: number) => void;
 }) {
-  const cfg = PLAN_STATUS_CONFIG[plan.status as keyof typeof PLAN_STATUS_CONFIG] ?? PLAN_STATUS_CONFIG.PLANNED;
+  const cfg = PLAN_STATUS_CONFIG[plan.status] ?? PLAN_STATUS_CONFIG.PLANNED;
   const Icon = cfg.icon;
   return (
     <div style={{
@@ -104,7 +105,7 @@ export function BreedingPlanPage() {
   const { data: mares = [] } = useQuery({ queryKey: ['mares'], queryFn: api.mares.list });
 
   const createMutation = useMutation({
-    mutationFn: (data: any) => api.breeding.plans.create(data),
+    mutationFn: (data: unknown) => api.breeding.plans.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['breeding-plans', selectedYear] });
       setShowModal(false);
@@ -114,7 +115,7 @@ export function BreedingPlanPage() {
 
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: number; status: string }) => {
-      const plan = plans.find((p: any) => p.id === id);
+      const plan = plans.find((p) => p.id === id);
       if (!plan) throw new Error('計画が見つかりません');
       return api.breeding.plans.update(id, {
         year: plan.year, stallionId: plan.stallionId, mareId: plan.mareId, memo: plan.memo, status,
@@ -128,9 +129,9 @@ export function BreedingPlanPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['breeding-plans', selectedYear] }),
   });
 
-  const plannedList = plans.filter((p: any) => p.status === 'PLANNED');
-  const completedList = plans.filter((p: any) => p.status === 'COMPLETED');
-  const cancelledList = plans.filter((p: any) => p.status === 'CANCELLED');
+  const plannedList = plans.filter((p) => p.status === 'PLANNED');
+  const completedList = plans.filter((p) => p.status === 'COMPLETED');
+  const cancelledList = plans.filter((p) => p.status === 'CANCELLED');
 
   const years = genYears();
 
@@ -197,7 +198,7 @@ export function BreedingPlanPage() {
               <div>
                 <div className="section-label" style={{ marginBottom: 12 }}>予定</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {plannedList.map((p: any) => (
+                  {plannedList.map((p) => (
                     <PlanCard key={p.id} plan={p}
                       onStatusChange={(id, status) => updateStatusMutation.mutate({ id, status })}
                       onDelete={(id) => deleteMutation.mutate(id)} />
@@ -209,7 +210,7 @@ export function BreedingPlanPage() {
               <div>
                 <div className="section-label" style={{ marginBottom: 12 }}>実施済み</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {completedList.map((p: any) => (
+                  {completedList.map((p) => (
                     <PlanCard key={p.id} plan={p}
                       onStatusChange={(id, status) => updateStatusMutation.mutate({ id, status })}
                       onDelete={(id) => deleteMutation.mutate(id)} />
@@ -221,7 +222,7 @@ export function BreedingPlanPage() {
               <div>
                 <div className="section-label" style={{ marginBottom: 12, opacity: 0.6 }}>取消</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, opacity: 0.6 }}>
-                  {cancelledList.map((p: any) => (
+                  {cancelledList.map((p) => (
                     <PlanCard key={p.id} plan={p}
                       onStatusChange={(id, status) => updateStatusMutation.mutate({ id, status })}
                       onDelete={(id) => deleteMutation.mutate(id)} />
@@ -253,7 +254,7 @@ export function BreedingPlanPage() {
                 <select className="form-select" value={form.stallionId}
                   onChange={e => setForm(f => ({ ...f, stallionId: e.target.value }))}>
                   <option value="">── 選択してください ──</option>
-                  {stallions.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  {stallions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>
               <div className="form-group">
@@ -261,7 +262,7 @@ export function BreedingPlanPage() {
                 <select className="form-select" value={form.mareId}
                   onChange={e => setForm(f => ({ ...f, mareId: e.target.value }))}>
                   <option value="">── 選択してください ──</option>
-                  {mares.map((m: any) => <option key={m.id} value={m.id}>{m.name}</option>)}
+                  {mares.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
                 </select>
               </div>
               <div className="form-group">

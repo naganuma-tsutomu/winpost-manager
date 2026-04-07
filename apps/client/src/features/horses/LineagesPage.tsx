@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
+import type { ParentLineageWithChildren } from '@winpost/shared';
 import { Plus, Trash2, X, GitBranch } from 'lucide-react';
 
 export function LineagesPage() {
@@ -49,7 +50,7 @@ export function LineagesPage() {
           </div>
         ) : (
           <div style={{ display: 'grid', gap: 'var(--space-4)' }}>
-            {parentLineages.map((pl: any) => (
+            {parentLineages.map((pl) => (
               <div key={pl.id} className="card">
                 <div className="card-header">
                   <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
@@ -64,8 +65,9 @@ export function LineagesPage() {
                 </div>
                 {pl.childLineages?.length > 0 ? (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
-                    {pl.childLineages.map((cl: any) => (
-                      <span key={cl.id} className="badge badge-primary" style={{ padding: 'var(--space-1) var(--space-3)', fontSize: 'var(--text-sm)', cursor: 'pointer' }}
+                    {pl.childLineages.map((cl) => (
+                      <span key={cl.id} className="badge badge-primary"
+                        style={{ padding: 'var(--space-1) var(--space-3)', fontSize: 'var(--text-sm)', cursor: 'pointer' }}
                         onClick={() => {
                           if (confirm(`子系統「${cl.name}」を削除しますか？`)) deleteChild.mutate(cl.id);
                         }}>
@@ -125,7 +127,10 @@ function ParentLineageModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-function ChildLineageModal({ parentLineages, onClose }: { parentLineages: any[]; onClose: () => void }) {
+function ChildLineageModal({ parentLineages, onClose }: {
+  parentLineages: ParentLineageWithChildren[];
+  onClose: () => void;
+}) {
   const queryClient = useQueryClient();
   const [name, setName] = useState('');
   const [parentLineageId, setParentLineageId] = useState('');
@@ -153,7 +158,7 @@ function ChildLineageModal({ parentLineages, onClose }: { parentLineages: any[];
               <select className="form-select" required value={parentLineageId}
                 onChange={(e) => setParentLineageId(e.target.value)}>
                 <option value="">選択してください</option>
-                {parentLineages.map((pl: any) => (
+                {parentLineages.map((pl) => (
                   <option key={pl.id} value={pl.id}>{pl.name}</option>
                 ))}
               </select>

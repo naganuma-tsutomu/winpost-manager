@@ -43,15 +43,14 @@ export function FoalsPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['foals'] }),
   });
 
-  const filtered = foals.filter((f: any) => {
+  const filtered = foals.filter((f) => {
     const matchSearch = !search || f.name?.toLowerCase().includes(search.toLowerCase());
     const matchYear = !filterYear || f.birthYear === Number(filterYear);
     return matchSearch && matchYear;
   });
 
   const birthYears = useMemo(() => {
-    const years = [...new Set(foals.map((f: any) => f.birthYear))].sort((a: number, b: number) => b - a);
-    return years;
+    return [...new Set(foals.map((f) => f.birthYear))].sort((a, b) => b - a);
   }, [foals]);
 
   return (
@@ -71,7 +70,7 @@ export function FoalsPage() {
           <select className="form-select" value={filterYear} onChange={(e) => setFilterYear(e.target.value)}
             style={{ width: 140 }}>
             <option value="">全年度</option>
-            {birthYears.map((y: number) => (
+            {birthYears.map((y) => (
               <option key={y} value={y}>{y}年</option>
             ))}
           </select>
@@ -108,7 +107,7 @@ export function FoalsPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((f: any) => {
+                {filtered.map((f) => {
                   const estimate = estimateSpeed(
                     f.kappaMark as EvalMark,
                     f.mikaMark as EvalMark,
@@ -120,19 +119,19 @@ export function FoalsPage() {
                       <td>{f.birthYear}</td>
                       <td>
                         <span className={`badge ${f.gender === 'MALE' ? 'badge-info' : 'badge-danger'}`}>
-                          {GENDERS[f.gender as keyof typeof GENDERS]}
+                          {GENDERS[f.gender]}
                         </span>
                       </td>
                       <td style={{ fontSize: 'var(--text-xs)' }}>{f.sire?.name || '—'}</td>
                       <td style={{ fontSize: 'var(--text-xs)' }}>{f.dam?.name || '—'}</td>
                       <td>
                         <span className={evalMarkClass[f.kappaMark] || 'eval-mark eval-mark-n'}>
-                          {EVAL_MARKS[f.kappaMark as keyof typeof EVAL_MARKS] || '－'}
+                          {EVAL_MARKS[f.kappaMark] || '－'}
                         </span>
                       </td>
                       <td>
                         <span className={evalMarkClass[f.mikaMark] || 'eval-mark eval-mark-n'}>
-                          {EVAL_MARKS[f.mikaMark as keyof typeof EVAL_MARKS] || '－'}
+                          {EVAL_MARKS[f.mikaMark] || '－'}
                         </span>
                       </td>
                       <td>
@@ -141,20 +140,20 @@ export function FoalsPage() {
                         </span>
                       </td>
                       <td style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
-                        {f.growthType ? GROWTH_TYPES[f.growthType as keyof typeof GROWTH_TYPES] : '—'}
+                        {f.growthType ? GROWTH_TYPES[f.growthType] : '—'}
                       </td>
                       <td>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                          {f.flags?.map((flag: any) => (
+                          {f.flags?.map((flag) => (
                             <span key={flag.id}
                               className={`badge ${flag.type === 'KEEP' ? 'badge-success' : flag.type === 'SELL' ? 'badge-danger' : flag.type === 'OVERSEAS_SALE' ? 'badge-warning' : 'badge-info'}`}
                               style={{ cursor: 'pointer' }}
                               onClick={() => {
-                                if (confirm(`フラグ「${FLAG_TYPES[flag.type as keyof typeof FLAG_TYPES]}」を削除しますか？`)) {
+                                if (confirm(`フラグ「${FLAG_TYPES[flag.type]}」を削除しますか？`)) {
                                   deleteFlagMutation.mutate({ foalId: f.id, flagId: flag.id });
                                 }
                               }}>
-                              {FLAG_TYPES[flag.type as keyof typeof FLAG_TYPES]} ×
+                              {FLAG_TYPES[flag.type]} ×
                             </span>
                           ))}
                         </div>
@@ -189,6 +188,25 @@ export function FoalsPage() {
   );
 }
 
+interface FoalForm {
+  name: string;
+  birthYear: number;
+  gender: string;
+  sireId: number | '';
+  damId: number | '';
+  kappaMark: string;
+  mikaMark: string;
+  bodyComment: string;
+  growthType: string;
+  memo: string;
+}
+
+const EMPTY_FOAL_FORM: FoalForm = {
+  name: '', birthYear: new Date().getFullYear(), gender: 'MALE',
+  sireId: '', damId: '', kappaMark: 'NONE', mikaMark: 'NONE',
+  bodyComment: '', growthType: '', memo: '',
+};
+
 function FoalModal({ editId, onClose }: { editId: number | null; onClose: () => void }) {
   const queryClient = useQueryClient();
   const isEdit = editId !== null;
@@ -202,14 +220,14 @@ function FoalModal({ editId, onClose }: { editId: number | null; onClose: () => 
   const { data: stallions = [] } = useQuery({ queryKey: ['stallions'], queryFn: api.stallions.list });
   const { data: mares = [] } = useQuery({ queryKey: ['mares'], queryFn: api.mares.list });
 
-  const [form, setForm] = useState<any>(() => {
+  const [form, setForm] = useState<FoalForm>(() => {
     if (isEdit && existing) {
       return {
         name: existing.name || '',
         birthYear: existing.birthYear,
         gender: existing.gender,
-        sireId: existing.sireId || '',
-        damId: existing.damId || '',
+        sireId: existing.sireId ?? '',
+        damId: existing.damId ?? '',
         kappaMark: existing.kappaMark,
         mikaMark: existing.mikaMark,
         bodyComment: existing.bodyComment || '',
@@ -217,20 +235,16 @@ function FoalModal({ editId, onClose }: { editId: number | null; onClose: () => 
         memo: existing.memo || '',
       };
     }
-    return {
-      name: '', birthYear: new Date().getFullYear(), gender: 'MALE',
-      sireId: '', damId: '', kappaMark: 'NONE', mikaMark: 'NONE',
-      bodyComment: '', growthType: '', memo: '',
-    };
+    return EMPTY_FOAL_FORM;
   });
 
   const estimate = useMemo(() =>
-    estimateSpeed(form.kappaMark, form.mikaMark, form.growthType || undefined),
+    estimateSpeed(form.kappaMark as EvalMark, form.mikaMark as EvalMark, form.growthType || undefined),
     [form.kappaMark, form.mikaMark, form.growthType]
   );
 
   const mutation = useMutation({
-    mutationFn: (data: any) => isEdit ? api.foals.update(editId!, data) : api.foals.create(data),
+    mutationFn: (data: unknown) => isEdit ? api.foals.update(editId!, data) : api.foals.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['foals'] });
       onClose();
@@ -242,8 +256,8 @@ function FoalModal({ editId, onClose }: { editId: number | null; onClose: () => 
     mutation.mutate({
       ...form,
       birthYear: Number(form.birthYear),
-      sireId: form.sireId ? Number(form.sireId) : null,
-      damId: form.damId ? Number(form.damId) : null,
+      sireId: form.sireId !== '' ? Number(form.sireId) : null,
+      damId: form.damId !== '' ? Number(form.damId) : null,
       growthType: form.growthType || null,
     });
   };
@@ -266,7 +280,7 @@ function FoalModal({ editId, onClose }: { editId: number | null; onClose: () => 
               <div className="form-group">
                 <label className="form-label">出生年 *</label>
                 <input className="form-input" type="number" required value={form.birthYear}
-                  onChange={(e) => setForm({ ...form, birthYear: e.target.value })} />
+                  onChange={(e) => setForm({ ...form, birthYear: Number(e.target.value) })} />
               </div>
               <div className="form-group">
                 <label className="form-label">性別 *</label>
@@ -283,9 +297,9 @@ function FoalModal({ editId, onClose }: { editId: number | null; onClose: () => 
               <div className="form-group">
                 <label className="form-label">父（種牡馬）</label>
                 <select className="form-select" value={form.sireId}
-                  onChange={(e) => setForm({ ...form, sireId: e.target.value })}>
+                  onChange={(e) => setForm({ ...form, sireId: e.target.value ? Number(e.target.value) : '' })}>
                   <option value="">未選択</option>
-                  {stallions.map((s: any) => (
+                  {stallions.map((s) => (
                     <option key={s.id} value={s.id}>{s.name}</option>
                   ))}
                 </select>
@@ -293,9 +307,9 @@ function FoalModal({ editId, onClose }: { editId: number | null; onClose: () => 
               <div className="form-group">
                 <label className="form-label">母（繁殖牝馬）</label>
                 <select className="form-select" value={form.damId}
-                  onChange={(e) => setForm({ ...form, damId: e.target.value })}>
+                  onChange={(e) => setForm({ ...form, damId: e.target.value ? Number(e.target.value) : '' })}>
                   <option value="">未選択</option>
-                  {mares.map((m: any) => (
+                  {mares.map((m) => (
                     <option key={m.id} value={m.id}>{m.name}</option>
                   ))}
                 </select>
@@ -387,7 +401,7 @@ function FlagModal({ foalId, onClose }: { foalId: number; onClose: () => void })
   const [targetDate, setTargetDate] = useState('');
 
   const mutation = useMutation({
-    mutationFn: (data: any) => api.foals.addFlag(foalId, data),
+    mutationFn: (data: unknown) => api.foals.addFlag(foalId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['foals'] });
       onClose();

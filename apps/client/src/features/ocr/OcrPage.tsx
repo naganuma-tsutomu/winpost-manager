@@ -6,6 +6,34 @@ import {
   AlertTriangle, RefreshCw, X, Info, Eye,
 } from 'lucide-react';
 import { EVAL_MARKS, GROWTH_TYPES, GENDERS } from '@winpost/shared';
+import type { Stallion, Mare } from '@winpost/shared';
+
+// ─────────────────────────────────────────
+// OCR レスポンス型
+// ─────────────────────────────────────────
+
+interface OcrRawItem {
+  text: string;
+  confidence: number;
+}
+
+interface OcrFoalData {
+  name?: string;
+  gender?: string;
+  birthYear?: number;
+  sireName?: string;
+  damName?: string;
+  kappaMark?: string;
+  mikaMark?: string;
+  growthType?: string;
+  bodyComment?: string;
+}
+
+interface OcrResult {
+  foal: OcrFoalData;
+  confidence: number;
+  raw: OcrRawItem[];
+}
 
 // ─────────────────────────────────────────
 // OCR API クライアント（api.ts 未追加分）
@@ -16,7 +44,7 @@ async function checkOcrHealth() {
   return res.json();
 }
 
-async function runOcrFoal(file: File): Promise<any> {
+async function runOcrFoal(file: File): Promise<OcrResult> {
   const form = new FormData();
   form.append('file', file);
   const res = await fetch('/api/ocr/foal', { method: 'POST', body: form });
@@ -119,7 +147,7 @@ function DropZone({
 // OCR 結果プレビュー
 // ─────────────────────────────────────────
 
-function OcrResultPreview({ result }: { result: any }) {
+function OcrResultPreview({ result }: { result: OcrResult }) {
   const foal = result.foal;
   const confidence = Math.round(result.confidence * 100);
 
@@ -208,20 +236,19 @@ function FoalRegistrationForm({
   mares,
   onSuccess,
 }: {
-  ocrData: any;
-  stallions: any[];
-  mares: any[];
+  ocrData: OcrResult | null;
+  stallions: Stallion[];
+  mares: Mare[];
   onSuccess: () => void;
 }) {
   const queryClient = useQueryClient();
   const [form, setForm] = useState(() => {
     if (!ocrData) return DEFAULT_FORM;
-    // OCR データで初期値を補完
     const foal = ocrData.foal;
-    const matchedSire = stallions.find((s: any) =>
+    const matchedSire = stallions.find((s) =>
       foal.sireName && s.name.includes(foal.sireName.trim())
     );
-    const matchedMare = mares.find((m: any) =>
+    const matchedMare = mares.find((m) =>
       foal.damName && m.name.includes(foal.damName.trim())
     );
     return {
@@ -239,7 +266,7 @@ function FoalRegistrationForm({
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: any) => api.foals.create(data),
+    mutationFn: (data: unknown) => api.foals.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['foals'] });
       onSuccess();
@@ -289,14 +316,14 @@ function FoalRegistrationForm({
           <label className="form-label">父馬</label>
           <select className="form-select" value={form.sireId} onChange={set('sireId')}>
             <option value="">── 未設定 ──</option>
-            {stallions.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            {stallions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
         </div>
         <div className="form-group" style={{ margin: 0 }}>
           <label className="form-label">母馬</label>
           <select className="form-select" value={form.damId} onChange={set('damId')}>
             <option value="">── 未設定 ──</option>
-            {mares.map((m: any) => <option key={m.id} value={m.id}>{m.name}</option>)}
+            {mares.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
           </select>
         </div>
       </div>
@@ -347,7 +374,7 @@ function FoalRegistrationForm({
 
       {createMutation.isError && (
         <div style={{ color: 'var(--color-accent-danger)', fontSize: 'var(--text-sm)' }}>
-          登録に失敗しました: {(createMutation.error as any)?.message}
+          登録に失敗しました: {(createMutation.error as Error)?.message}
         </div>
       )}
     </div>
@@ -364,7 +391,7 @@ export function OcrPage() {
   const [step, setStep] = useState<Step>('upload');
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [ocrResult, setOcrResult] = useState<any>(null);
+  const [ocrResult, setOcrResult] = useState<OcrResult | null>(null);
   const [showRaw, setShowRaw] = useState(false);
 
   const { data: stallions = [] } = useQuery({ queryKey: ['stallions'], queryFn: api.stallions.list });
@@ -511,7 +538,7 @@ export function OcrPage() {
                   color: '#ef4444', fontSize: 'var(--text-sm)',
                 }}>
                   <AlertTriangle style={{ display: 'inline', verticalAlign: 'middle', marginRight: 6, width: 16, height: 16 }} />
-                  {(ocrMutation.error as any)?.message}
+                  {(ocrMutation.error as Error)?.message}
                 </div>
               )}
 
@@ -527,7 +554,7 @@ export function OcrPage() {
                   </button>
                   {showRaw && (
                     <div style={{ maxHeight: 200, overflowY: 'auto', fontSize: 11, color: 'var(--color-text-secondary)' }}>
-                      {ocrResult.raw?.map((r: any, i: number) => (
+                      {ocrResult.raw?.map((r, i) => (
                         <div key={i} style={{ padding: '2px 0', borderBottom: '1px solid var(--color-border-subtle)' }}>
                           <span style={{ opacity: 0.5 }}>[{Math.round(r.confidence * 100)}%]</span> {r.text}
                         </div>

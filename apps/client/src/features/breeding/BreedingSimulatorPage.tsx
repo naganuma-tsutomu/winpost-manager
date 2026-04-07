@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { api } from '../../lib/api';
-import type { BreedingResult, BreedingTheory } from '@winpost/shared';
+import type { BreedingCalculateResponse, BreedingResult, BreedingTheory } from '@winpost/shared';
 import {
   Zap, AlertTriangle, CheckCircle, Info,
   ChevronRight, Flame, Shield,
@@ -231,7 +231,7 @@ function ResultPanel({ result, stallionName, mareName }: {
 export function BreedingSimulatorPage() {
   const [stallionId, setStallionId] = useState<number | null>(null);
   const [mareId, setMareId] = useState<number | null>(null);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<BreedingCalculateResponse | null>(null);
 
   const { data: stallions = [] } = useQuery({ queryKey: ['stallions'], queryFn: api.stallions.list });
   const { data: mares = [] } = useQuery({ queryKey: ['mares'], queryFn: api.mares.list });
@@ -246,8 +246,8 @@ export function BreedingSimulatorPage() {
     calcMutation.mutate();
   }, [stallionId, mareId, calcMutation]);
 
-  const selectedStallion = stallions.find((s: any) => s.id === stallionId);
-  const selectedMare = mares.find((m: any) => m.id === mareId);
+  const selectedStallion = stallions.find((s) => s.id === stallionId);
+  const selectedMare = mares.find((m) => m.id === mareId);
 
   return (
     <>
@@ -270,7 +270,7 @@ export function BreedingSimulatorPage() {
                 setResult(null);
               }}>
                 <option value="">── 種牡馬を選択 ──</option>
-                {stallions.map((s: any) => (
+                {stallions.map((s) => (
                   <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
               </select>
@@ -283,7 +283,7 @@ export function BreedingSimulatorPage() {
                     </span>
                   </div>
                   <div className="factor-tags">
-                    {selectedStallion.factors?.map((f: any) => (
+                    {selectedStallion.factors?.map((f) => (
                       <span key={f.id} className="factor-tag">{f.type}</span>
                     ))}
                   </div>
@@ -301,7 +301,7 @@ export function BreedingSimulatorPage() {
                 setResult(null);
               }}>
                 <option value="">── 繁殖牝馬を選択 ──</option>
-                {mares.map((m: any) => (
+                {mares.map((m) => (
                   <option key={m.id} value={m.id}>{m.name}</option>
                 ))}
               </select>
@@ -311,7 +311,7 @@ export function BreedingSimulatorPage() {
                     <span className="badge badge-success">{selectedMare.lineage}</span>
                   </div>
                   <div className="factor-tags">
-                    {selectedMare.factors?.map((f: any) => (
+                    {selectedMare.factors?.map((f) => (
                       <span key={f.id} className="factor-tag">{f.type}</span>
                     ))}
                   </div>
@@ -344,7 +344,7 @@ export function BreedingSimulatorPage() {
           <div>
             {result ? (
               <ResultPanel
-                result={result.result as BreedingResult}
+                result={result.result}
                 stallionName={result.stallion?.name ?? ''}
                 mareName={result.mare?.name ?? ''}
               />

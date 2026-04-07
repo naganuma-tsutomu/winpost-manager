@@ -20,7 +20,7 @@ export function MaresPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['mares'] }),
   });
 
-  const filtered = mares.filter((m: any) =>
+  const filtered = mares.filter((m) =>
     m.name.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -67,15 +67,15 @@ export function MaresPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((m: any) => (
+                {filtered.map((m) => (
                   <tr key={m.id}>
                     <td style={{ fontWeight: 600 }}>{m.name}</td>
                     <td><span className="badge badge-success">{m.lineage}</span></td>
                     <td>
                       <div className="factor-tags">
-                        {m.factors?.map((f: any) => (
+                        {m.factors?.map((f) => (
                           <span key={f.id} className="factor-tag">
-                            {FACTOR_TYPES[f.type as keyof typeof FACTOR_TYPES] || f.type}
+                            {FACTOR_TYPES[f.type] || f.type}
                           </span>
                         ))}
                       </div>
@@ -112,6 +112,19 @@ export function MaresPage() {
   );
 }
 
+interface MareForm {
+  name: string;
+  lineage: string;
+  speed: number | '';
+  stamina: number | '';
+  memo: string;
+  factors: string[];
+}
+
+const EMPTY_FORM: MareForm = {
+  name: '', lineage: '', speed: '', stamina: '', memo: '', factors: [],
+};
+
 function MareModal({ editId, onClose }: { editId: number | null; onClose: () => void }) {
   const queryClient = useQueryClient();
   const isEdit = editId !== null;
@@ -122,22 +135,22 @@ function MareModal({ editId, onClose }: { editId: number | null; onClose: () => 
     enabled: isEdit,
   });
 
-  const [form, setForm] = useState<any>(() => {
+  const [form, setForm] = useState<MareForm>(() => {
     if (isEdit && existing) {
       return {
         name: existing.name,
         lineage: existing.lineage,
-        speed: existing.speed,
-        stamina: existing.stamina,
+        speed: existing.speed ?? '',
+        stamina: existing.stamina ?? '',
         memo: existing.memo || '',
-        factors: existing.factors?.map((f: any) => f.type) || [],
+        factors: existing.factors.map((f) => f.type),
       };
     }
-    return { name: '', lineage: '', speed: '', stamina: '', memo: '', factors: [] };
+    return EMPTY_FORM;
   });
 
   const mutation = useMutation({
-    mutationFn: (data: any) => isEdit ? api.mares.update(editId!, data) : api.mares.create(data),
+    mutationFn: (data: unknown) => isEdit ? api.mares.update(editId!, data) : api.mares.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mares'] });
       onClose();
@@ -154,10 +167,10 @@ function MareModal({ editId, onClose }: { editId: number | null; onClose: () => 
   };
 
   const toggleFactor = (type: string) => {
-    setForm((prev: any) => ({
+    setForm((prev) => ({
       ...prev,
       factors: prev.factors.includes(type)
-        ? prev.factors.filter((f: string) => f !== type)
+        ? prev.factors.filter((f) => f !== type)
         : [...prev.factors, type],
     }));
   };
@@ -186,12 +199,14 @@ function MareModal({ editId, onClose }: { editId: number | null; onClose: () => 
               <div className="form-group">
                 <label className="form-label">SP</label>
                 <input className="form-input" type="number" min={0} max={100}
-                  value={form.speed} onChange={(e) => setForm({ ...form, speed: e.target.value })} />
+                  value={form.speed}
+                  onChange={(e) => setForm({ ...form, speed: e.target.value === '' ? '' : Number(e.target.value) })} />
               </div>
               <div className="form-group">
                 <label className="form-label">ST</label>
                 <input className="form-input" type="number" min={0} max={100}
-                  value={form.stamina} onChange={(e) => setForm({ ...form, stamina: e.target.value })} />
+                  value={form.stamina}
+                  onChange={(e) => setForm({ ...form, stamina: e.target.value === '' ? '' : Number(e.target.value) })} />
               </div>
             </div>
             <div className="form-group">

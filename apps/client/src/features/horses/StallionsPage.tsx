@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
-import { FACTOR_TYPES } from '@winpost/shared';
+import { FACTOR_TYPES, type ChildLineageWithParent } from '@winpost/shared';
 import { Plus, Pencil, Trash2, Search, X } from 'lucide-react';
 
 export function StallionsPage() {
@@ -25,7 +25,7 @@ export function StallionsPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['stallions'] }),
   });
 
-  const filtered = stallions.filter((s: any) =>
+  const filtered = stallions.filter((s) =>
     s.name.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -86,7 +86,7 @@ export function StallionsPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((s: any) => (
+                {filtered.map((s) => (
                   <tr key={s.id}>
                     <td style={{ fontWeight: 600 }}>{s.name}</td>
                     <td>
@@ -100,9 +100,9 @@ export function StallionsPage() {
                     </td>
                     <td>
                       <div className="factor-tags">
-                        {s.factors?.map((f: any) => (
+                        {s.factors?.map((f) => (
                           <span key={f.id} className="factor-tag">
-                            {FACTOR_TYPES[f.type as keyof typeof FACTOR_TYPES] || f.type}
+                            {FACTOR_TYPES[f.type] || f.type}
                           </span>
                         ))}
                       </div>
@@ -138,7 +138,30 @@ export function StallionsPage() {
   );
 }
 
-function StallionModal({ editId, childLineages, onClose }: { editId: number | null; childLineages: any[]; onClose: () => void }) {
+// フォームの内部状態型（number入力は未入力時に '' を許容）
+interface StallionForm {
+  name: string;
+  childLineageId: number | '';
+  speed: number | '';
+  stamina: number | '';
+  power: number | '';
+  guts: number | '';
+  wisdom: number | '';
+  health: number | '';
+  memo: string;
+  factors: string[];
+}
+
+const EMPTY_FORM: StallionForm = {
+  name: '', childLineageId: '', speed: '', stamina: '', power: '',
+  guts: '', wisdom: '', health: '', memo: '', factors: [],
+};
+
+function StallionModal({ editId, childLineages, onClose }: {
+  editId: number | null;
+  childLineages: ChildLineageWithParent[];
+  onClose: () => void;
+}) {
   const queryClient = useQueryClient();
   const isEdit = editId !== null;
 
@@ -148,29 +171,26 @@ function StallionModal({ editId, childLineages, onClose }: { editId: number | nu
     enabled: isEdit,
   });
 
-  const [form, setForm] = useState<any>(() => {
+  const [form, setForm] = useState<StallionForm>(() => {
     if (isEdit && existing) {
       return {
         name: existing.name,
         childLineageId: existing.childLineageId,
-        speed: existing.speed,
-        stamina: existing.stamina,
-        power: existing.power,
-        guts: existing.guts,
-        wisdom: existing.wisdom,
-        health: existing.health,
+        speed: existing.speed ?? '',
+        stamina: existing.stamina ?? '',
+        power: existing.power ?? '',
+        guts: existing.guts ?? '',
+        wisdom: existing.wisdom ?? '',
+        health: existing.health ?? '',
         memo: existing.memo || '',
-        factors: existing.factors?.map((f: any) => f.type) || [],
+        factors: existing.factors.map((f) => f.type),
       };
     }
-    return {
-      name: '', childLineageId: '', speed: '', stamina: '', power: '',
-      guts: '', wisdom: '', health: '', memo: '', factors: [],
-    };
+    return EMPTY_FORM;
   });
 
   const mutation = useMutation({
-    mutationFn: (data: any) => isEdit ? api.stallions.update(editId!, data) : api.stallions.create(data),
+    mutationFn: (data: unknown) => isEdit ? api.stallions.update(editId!, data) : api.stallions.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['stallions'] });
       onClose();
@@ -193,10 +213,10 @@ function StallionModal({ editId, childLineages, onClose }: { editId: number | nu
   };
 
   const toggleFactor = (type: string) => {
-    setForm((prev: any) => ({
+    setForm((prev) => ({
       ...prev,
       factors: prev.factors.includes(type)
-        ? prev.factors.filter((f: string) => f !== type)
+        ? prev.factors.filter((f) => f !== type)
         : [...prev.factors, type],
     }));
   };
@@ -218,21 +238,22 @@ function StallionModal({ editId, childLineages, onClose }: { editId: number | nu
             <div className="form-group">
               <label className="form-label">子系統 *</label>
               <select className="form-select" required value={form.childLineageId}
-                onChange={(e) => setForm({ ...form, childLineageId: e.target.value })}>
+                onChange={(e) => setForm({ ...form, childLineageId: e.target.value === '' ? '' : Number(e.target.value) })}>
                 <option value="">選択してください</option>
-                {childLineages.map((l: any) => (
+                {childLineages.map((l) => (
                   <option key={l.id} value={l.id}>{l.parentLineage?.name} → {l.name}</option>
                 ))}
               </select>
             </div>
             <div className="form-row">
-              {['speed', 'stamina', 'power', 'guts', 'wisdom', 'health'].map(field => (
+              {(['speed', 'stamina', 'power', 'guts', 'wisdom', 'health'] as const).map(field => (
                 <div className="form-group" key={field}>
                   <label className="form-label">
                     {{ speed: 'SP', stamina: 'ST', power: 'パワー', guts: '根性', wisdom: '賢さ', health: '健康' }[field]}
                   </label>
                   <input className="form-input" type="number" min={0} max={100}
-                    value={form[field]} onChange={(e) => setForm({ ...form, [field]: e.target.value })} />
+                    value={form[field]}
+                    onChange={(e) => setForm({ ...form, [field]: e.target.value === '' ? '' : Number(e.target.value) })} />
                 </div>
               ))}
             </div>
