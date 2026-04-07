@@ -9,8 +9,11 @@ RUN apt-get update && apt-get install -y \
     libxext6 \
     libxrender-dev \
     libgomp1 \
-    libgl1-mesa-glx \
+    libgl1 \
     && rm -rf /var/lib/apt/lists/*
+
+# CPU版の PyTorch を事前インストール (イメージサイズとダウンロード時間の削減)
+RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu --no-cache-dir
 
 # Python 依存パッケージ
 COPY requirements.txt .

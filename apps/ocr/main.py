@@ -78,9 +78,9 @@ class OcrResponse(BaseModel):
 # ─────────────────────────────────────────
 
 EVAL_MARK_PATTERNS = {
-    "DOUBLE_CIRCLE": re.compile(r"◎|⊚|◉"),
-    "CIRCLE":        re.compile(r"○|〇|Ｏ"),
-    "TRIANGLE":      re.compile(r"▲|△"),
+    "DOUBLE_CIRCLE": re.compile(r"◎|⊚|◉|@|©|回"),
+    "CIRCLE":        re.compile(r"○|〇|Ｏ|O|o|0|０|◯|Q|C"),
+    "TRIANGLE":      re.compile(r"▲|△|A"),
 }
 
 GROWTH_TYPE_PATTERNS = {
@@ -92,8 +92,8 @@ GROWTH_TYPE_PATTERNS = {
 }
 
 GENDER_PATTERNS = {
-    "MALE":   re.compile(r"牡|♂"),
-    "FEMALE": re.compile(r"牝|♀"),
+    "MALE":   re.compile(r"牡|♂|社"),
+    "FEMALE": re.compile(r"牝|♀|牝馬|北口|北[0O○〇]"),
 }
 
 # WP10のゲーム年度 (1983〜)
@@ -194,20 +194,51 @@ def parse_foal_data(ocr_results: list[tuple]) -> FoalData:
     # ─── 父馬名・母馬名 ───
     # "父:" "母:" などのラベルを探す
     for i, raw in enumerate(all_texts):
-        if re.search(r"父[：:]?$|^父$", raw.strip()):
+        sire_match = re.search(r"^父\s*[:：]?\s*(.+)$", raw.strip())
+        if sire_match:
+            foal.sireName = sire_match.group(1).strip()
+        elif re.search(r"^父[：:]?$|^父$", raw.strip()):
             if i + 1 < len(all_texts):
                 foal.sireName = all_texts[i + 1].strip()
-        if re.search(r"母[：:]?$|^母$", raw.strip()):
+
+        dam_match = re.search(r"^母\s*[:：]?\s*(.+)$", raw.strip())
+        if dam_match:
+            foal.damName = dam_match.group(1).strip()
+        elif re.search(r"^母[：:]?$|^母$", raw.strip()):
             if i + 1 < len(all_texts):
                 foal.damName = all_texts[i + 1].strip()
 
+    # リーディング等のノイズが名前に混ざったら省く
+    if foal.sireName and foal.sireName in ["リーディング", "ーディング", "ディング"]:
+        foal.sireName = None
+
     # ─── 馬名 ───
-    # ゲーム内では幼駒に名前がついている場合がある（カタカナ or 漢字）
-    kanji_kana_pattern = re.compile(r"^[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]{2,10}$")
-    candidates = [t for t in all_texts if kanji_kana_pattern.match(t.strip()) and len(t.strip()) >= 2]
-    if candidates:
-        # 最初の候補を馬名として扱う（精度は低い）
-        foal.name = candidates[0].strip()
+    # ゲーム内では幼駒に名前がついている場合がある（カタカナ or 漢字）＋ 誕生年の数字（母名＋年度など）
+    # 除外ワード（UIのテキスト）
+    exclude_words = {"評価額", "取引額", "基本能力", "瞬発力", "柔軟性", "精神力", "スピード", "勝負根性", "パワー", "健康", "賢さ", "ウマーソナリティ", "未獲得", "河童木", "育成中", "詳細", "血統", "能力", "北口"}
+    
+    # 馬名のパターン: カタカナ主体 + 数字(末尾) または2文字以上の漢字・カタカナ (UIキーワード以外)
+    katakana_num_pattern = re.compile(r"^[\u30A0-\u30FFー]+[0-9０-９]{0,4}$")
+    general_name_pattern = re.compile(r"^[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]{2,12}$")
+    
+    for t in all_texts:
+        clean_t = t.strip()
+        if clean_t in exclude_words:
+            continue
+        if len(clean_t) < 2:
+            continue
+        if katakana_num_pattern.match(clean_t) or general_name_pattern.match(clean_t):
+            foal.name = clean_t
+            break
+            
+    # ─── 誕生年の簡易推定 ───
+    if not foal.birthYear and foal.name:
+        m = re.search(r"([0-9０-９]{2})$", foal.name)
+        if m:
+            # 全角数字を半角に変換
+            yy_str = m.group(1).translate(str.maketrans('０１２３４５６７８９', '0123456789'))
+            yy = int(yy_str)
+            foal.birthYear = 1900 + yy if yy >= 70 else 2000 + yy
 
     # ─── 馬体コメント ───
     comment_keywords = re.compile(r"馬体|コメント|特徴|診断")

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -9,6 +10,8 @@ import {
   TreeDeciduous,
   Calendar,
   ScanLine,
+  Menu,
+  X,
 } from 'lucide-react';
 
 const navItems = [
@@ -32,9 +35,33 @@ const navItems = [
 ];
 
 export function Layout() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const closeSidebar = () => setSidebarOpen(false);
+
   return (
     <div className="app-layout">
-      <aside className="sidebar">
+      {/* モバイルヘッダー */}
+      <header className="mobile-header">
+        <button
+          className="mobile-menu-btn"
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          aria-label={sidebarOpen ? 'メニューを閉じる' : 'メニューを開く'}
+        >
+          {sidebarOpen ? <X /> : <Menu />}
+        </button>
+        <div className="mobile-header-logo">
+          <span className="sidebar-logo-icon">🐎</span>
+          <span className="sidebar-logo-text">WinPost</span>
+        </div>
+      </header>
+
+      {/* オーバーレイ */}
+      {sidebarOpen && (
+        <div className="sidebar-overlay" onClick={closeSidebar} />
+      )}
+
+      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
           <div className="sidebar-logo">
             <div className="sidebar-logo-icon">🐎</div>
@@ -51,6 +78,7 @@ export function Layout() {
                   to={item.to}
                   end={item.to === '/'}
                   className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                  onClick={closeSidebar}
                 >
                   <item.icon />
                   {item.label}
