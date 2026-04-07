@@ -6,9 +6,12 @@
   "types": "./src/index.ts",
   "scripts": {
     "build": "tsc",
-    "lint": "echo 'lint passed'"
+    "lint": "echo 'lint passed'",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
-    "typescript": "^5.8.0"
+    "typescript": "^5.8.0",
+    "vitest": "^4.1.2"
   }
 }

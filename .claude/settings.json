@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm --filter @winpost/shared run build)",
+      "Bash(pnpm --filter @winpost/client exec tsc --noEmit)"
+    ]
+  }
+}
