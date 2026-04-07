@@ -186,7 +186,8 @@ export function calcNicks(
   const count = Math.min(matched.length, 4);
 
   const basePower = matched.reduce((sum, m) => sum + m.level * 2, 0);
-  const subBonus = matched.some(m => m.entry.factorTypes.includes('FAMOUS_SIRE') || m.entry.factorTypes.includes('GREAT_SIRE')) ? 3 : 0;
+  const famousSireCount = matched.filter(m => m.entry.factorTypes.includes('FAMOUS_SIRE') || m.entry.factorTypes.includes('GREAT_SIRE')).length;
+  const subBonus = famousSireCount * 3;
 
   const posLabel = matched.map(m => {
     const posMap: Record<string, string> = { 'MF': '母父', 'MMF': '母母父', 'MMMF': '母母母父' };
@@ -340,6 +341,7 @@ export function calcLineBreed(
   // 親系統ラインブリード: 3代前8頭のうち同じ親系統が3頭以上 (子系統は異なる)
   const parentLineageCounts = new Map<number, { ids: Set<number>; count: number }>();
   for (const e of allGen3) {
+    if (e.parentLineageId === 0) continue; // 親系統未設定はスキップ
     if (!parentLineageCounts.has(e.parentLineageId)) {
       parentLineageCounts.set(e.parentLineageId, { ids: new Set(), count: 0 });
     }

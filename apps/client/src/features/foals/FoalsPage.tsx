@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { EVAL_MARKS, GENDERS, GROWTH_TYPES, FLAG_TYPES, estimateSpeed } from '@winpost/shared';
-import type { EvalMark } from '@winpost/shared';
+import type { EvalMark, GrowthType } from '@winpost/shared';
 import { Plus, Pencil, Trash2, Search, X, Flag, Tag } from 'lucide-react';
 
 const evalMarkClass: Record<string, string> = {
@@ -109,8 +109,8 @@ export function FoalsPage() {
               <tbody>
                 {filtered.map((f) => {
                   const estimate = estimateSpeed(
-                    f.kappaMark as EvalMark,
-                    f.mikaMark as EvalMark,
+                    f.kappaMark,
+                    f.mikaMark,
                     f.growthType || undefined
                   );
                   return (
@@ -239,7 +239,7 @@ function FoalModal({ editId, onClose }: { editId: number | null; onClose: () => 
   });
 
   const estimate = useMemo(() =>
-    estimateSpeed(form.kappaMark as EvalMark, form.mikaMark as EvalMark, form.growthType || undefined),
+    estimateSpeed(form.kappaMark as EvalMark, form.mikaMark as EvalMark, (form.growthType || undefined) as GrowthType | undefined),
     [form.kappaMark, form.mikaMark, form.growthType]
   );
 

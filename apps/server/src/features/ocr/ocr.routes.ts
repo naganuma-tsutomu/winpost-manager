@@ -28,9 +28,9 @@ ocrRouter.get('/health', async (_req: Request, res: Response) => {
     const resp = await fetch(`${OCR_SERVICE_URL}/health`, {
       signal: AbortSignal.timeout(5000),
     });
-    const data = await resp.json() as any;
+    const data = await resp.json() as Record<string, unknown>;
     res.json({ ...data, url: OCR_SERVICE_URL });
-  } catch (e: any) {
+  } catch (e) {
     res.status(503).json({
       status: 'unavailable',
       error: 'OCR サービスに接続できません',
@@ -120,9 +120,16 @@ ocrRouter.post('/raw', upload.single('file'), async (req: Request, res: Response
       signal: AbortSignal.timeout(60_000),
     });
 
+    if (!resp.ok) {
+      const err = await resp.text();
+      console.error('OCR サービスエラー (raw):', err);
+      res.status(resp.status).json({ error: 'OCR サービスでエラーが発生しました', detail: err });
+      return;
+    }
+
     const data = await resp.json();
     res.json(data);
-  } catch (e: any) {
+  } catch (e) {
     res.status(503).json({ error: 'OCR サービスに接続できません' });
   }
 });

@@ -156,7 +156,14 @@ foalRouter.post('/:id/flags', async (req, res) => {
 // フラグ削除
 foalRouter.delete('/:foalId/flags/:flagId', async (req, res) => {
   try {
-    await prisma.foalFlag.delete({ where: { id: Number(req.params.flagId) } });
+    const foalId = Number(req.params.foalId);
+    const flagId = Number(req.params.flagId);
+    const flag = await prisma.foalFlag.findUnique({ where: { id: flagId } });
+    if (!flag || flag.foalId !== foalId) {
+      res.status(404).json({ error: 'フラグが見つかりません' });
+      return;
+    }
+    await prisma.foalFlag.delete({ where: { id: flagId } });
     res.status(204).send();
   } catch (error) {
     console.error('Error deleting flag:', error);

@@ -308,7 +308,13 @@ breedingRouter.get('/nicks', async (_req, res) => {
 
 breedingRouter.post('/nicks', async (req, res) => {
   try {
-    const data = nicksSchema.parse(req.body);
+    const raw = nicksSchema.parse(req.body);
+    // 常に小さい ID を lineageAId に正規化して双方向重複を防ぐ
+    const data = {
+      lineageAId: Math.min(raw.lineageAId, raw.lineageBId),
+      lineageBId: Math.max(raw.lineageAId, raw.lineageBId),
+      level: raw.level,
+    };
     const nicks = await prisma.nicksRelation.upsert({
       where: { lineageAId_lineageBId: { lineageAId: data.lineageAId, lineageBId: data.lineageBId } },
       update: { level: data.level },
