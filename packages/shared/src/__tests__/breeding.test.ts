@@ -64,14 +64,14 @@ function makeMare(overrides: Partial<MareInput> = {}): MareInput {
 describe('calcNicks', () => {
   it('相性テーブルに一致がなければ空配列を返す', () => {
     const stallion = makeStallion({ childLineageId: 10 });
-    const marePedigree = [makeAncestor({ position: 'MF', childLineageId: 99 })];
+    const marePedigree = [makeAncestor({ position: 'F', childLineageId: 99 })];
     const nicksTable: NicksRelation[] = [];
     expect(calcNicks(stallion, marePedigree, nicksTable)).toEqual([]);
   });
 
   it('母父との相性一致でシングルニックスが成立する', () => {
     const stallion = makeStallion({ childLineageId: 10 });
-    const marePedigree = [makeAncestor({ position: 'MF', childLineageId: 20, ancestorName: 'DamSire' })];
+    const marePedigree = [makeAncestor({ position: 'F', childLineageId: 20, ancestorName: 'DamSire' })];
     const nicksTable: NicksRelation[] = [{ lineageAId: 10, lineageBId: 20, level: 2 }];
 
     const result = calcNicks(stallion, marePedigree, nicksTable);
@@ -83,8 +83,8 @@ describe('calcNicks', () => {
   it('母父・母母父の2本一致でダブルニックスが成立する', () => {
     const stallion = makeStallion({ childLineageId: 10 });
     const marePedigree = [
-      makeAncestor({ position: 'MF',  childLineageId: 20, ancestorName: 'DamSire' }),
-      makeAncestor({ position: 'MMF', childLineageId: 30, ancestorId: 2, ancestorName: 'DamDamSire' }),
+      makeAncestor({ position: 'F',  childLineageId: 20, ancestorName: 'DamSire' }),
+      makeAncestor({ position: 'MF', childLineageId: 30, ancestorId: 2, ancestorName: 'DamDamSire' }),
     ];
     const nicksTable: NicksRelation[] = [
       { lineageAId: 10, lineageBId: 20, level: 1 },
@@ -101,7 +101,7 @@ describe('calcNicks', () => {
   it('相性がある先祖が名種牡馬因子を持つ場合 subPower ボーナスが加算される', () => {
     const stallion = makeStallion({ childLineageId: 10 });
     const marePedigree = [
-      makeAncestor({ position: 'MF', childLineageId: 20, ancestorName: 'Famous', factorTypes: ['FAMOUS_SIRE'] }),
+      makeAncestor({ position: 'F', childLineageId: 20, ancestorName: 'Famous', factorTypes: ['FAMOUS_SIRE'] }),
     ];
     const nicksTable: NicksRelation[] = [{ lineageAId: 10, lineageBId: 20, level: 1 }];
 
@@ -233,7 +233,7 @@ describe('calcLineBreed', () => {
   it('母父と父が同じ子系統で子系統ラインブリードが成立する', () => {
     const stallion = makeStallion({ childLineageId: 10 });
     const marePedigree = [
-      makeAncestor({ position: 'MF', childLineageId: 10, generation: 1, ancestorName: 'SameLine' }),
+      makeAncestor({ position: 'F', childLineageId: 10, generation: 1, ancestorName: 'SameLine' }),
     ];
     const result = calcLineBreed(stallion, [], marePedigree);
     expect(result.some(t => t.type === 'LINE_BREED_CHILD')).toBe(true);
@@ -322,7 +322,7 @@ describe('calcAtavism', () => {
     const stallion = makeStallion({ factorTypes: ['SPEED'] });
     const mare = makeMare({ factorTypes: [] });
     const marePedigree = [
-      makeAncestor({ position: 'MF', generation: 1, factorTypes: ['STAMINA'], ancestorName: 'DamSireGrand' }),
+      makeAncestor({ position: 'F', generation: 1, factorTypes: ['STAMINA'], ancestorName: 'DamSireGrand' }),
     ];
     const result = calcAtavism(stallion, [], mare, marePedigree);
     expect(result).toHaveLength(1);
@@ -336,7 +336,7 @@ describe('calcAtavism', () => {
       makeAncestor({ position: 'FF', generation: 2, factorTypes: ['SPEED'] }),
     ];
     const marePedigree = [
-      makeAncestor({ position: 'MF', generation: 1, factorTypes: ['STAMINA'] }),
+      makeAncestor({ position: 'F', generation: 1, factorTypes: ['STAMINA'] }),
     ];
     const result = calcAtavism(stallion, stallionPedigree, mare, marePedigree);
     expect(result).toHaveLength(2);
@@ -353,13 +353,13 @@ describe('calcDamSireBonus', () => {
   });
 
   it('母父が有効な因子を持たなければ空配列を返す', () => {
-    const marePedigree = [makeAncestor({ position: 'MF', factorTypes: [] })];
+    const marePedigree = [makeAncestor({ position: 'F', factorTypes: [] })];
     expect(calcDamSireBonus(marePedigree)).toHaveLength(0);
   });
 
   it('母父がSPEED因子を持てば母父○が成立する', () => {
     const marePedigree = [
-      makeAncestor({ position: 'MF', factorTypes: ['SPEED'], ancestorName: 'SpeedSire' }),
+      makeAncestor({ position: 'F', factorTypes: ['SPEED'], ancestorName: 'SpeedSire' }),
     ];
     const result = calcDamSireBonus(marePedigree);
     expect(result).toHaveLength(1);
@@ -386,7 +386,7 @@ describe('calculateBreeding', () => {
     // 母父○ + ニックス(シングル) で power を積み上げる
     const stallion = makeStallion({ childLineageId: 10 });
     const marePedigree = [
-      makeAncestor({ position: 'MF', childLineageId: 20, ancestorName: 'DS', factorTypes: ['SPEED'] }),
+      makeAncestor({ position: 'F', childLineageId: 20, ancestorName: 'DS', factorTypes: ['SPEED'] }),
     ];
     const nicksTable: NicksRelation[] = [];
 
@@ -418,9 +418,9 @@ describe('calculateBreeding', () => {
     // calcNicks でスコアを大量に稼ぐ
     const stallion = makeStallion({ childLineageId: 10 });
     const marePedigree = [
-      makeAncestor({ position: 'MF',   childLineageId: 20, ancestorName: 'DS1', factorTypes: ['GREAT_SIRE'] }),
-      makeAncestor({ position: 'MMF',  childLineageId: 30, ancestorId: 2, ancestorName: 'DS2', factorTypes: ['GREAT_SIRE'] }),
-      makeAncestor({ position: 'MMMF', childLineageId: 40, ancestorId: 3, ancestorName: 'DS3', factorTypes: ['GREAT_SIRE'] }),
+      makeAncestor({ position: 'F',   childLineageId: 20, ancestorName: 'DS1', factorTypes: ['GREAT_SIRE'] }),
+      makeAncestor({ position: 'MF',  childLineageId: 30, ancestorId: 2, ancestorName: 'DS2', factorTypes: ['GREAT_SIRE'] }),
+      makeAncestor({ position: 'MMF', childLineageId: 40, ancestorId: 3, ancestorName: 'DS3', factorTypes: ['GREAT_SIRE'] }),
     ];
     const nicksTable: NicksRelation[] = [
       { lineageAId: 10, lineageBId: 20, level: 3 },

@@ -160,8 +160,8 @@ export function calcNicks(
 ): BreedingTheory[] {
   const theories: BreedingTheory[] = [];
 
-  // ニックス確認対象: MF(母父), MMF(母母父), MMMF(母母母父)
-  const damPositions = ['MF', 'MMF', 'MMMF'];
+  // ニックス確認対象: 母馬の父(F), 母馬の母父(MF), 母馬の母母父(MMF)
+  const damPositions = ['F', 'MF', 'MMF'];
   const matched: { pos: string; entry: AncestorEntry; level: number }[] = [];
 
   for (const pos of damPositions) {
@@ -379,7 +379,7 @@ export function calcLineBreed(
 
   // 子系統ラインブリード: 父と母が同じ子系統
   const sireChildLineageId = stallion.childLineageId;
-  const damParentGen1 = marePedigree.find(e => e.position === 'MF'); // 母父
+  const damParentGen1 = marePedigree.find(e => e.position === 'F'); // 母馬の父（母父）
   if (damParentGen1 && damParentGen1.childLineageId === sireChildLineageId) {
     theories.push({
       type: 'LINE_BREED_CHILD',
@@ -504,7 +504,7 @@ export function calcAtavism(
 
   // 母自身が因子なし & 母の父が因子あり
   if (mare.factorTypes.length === 0) {
-    const damGrandfather = marePedigree.find(e => e.position === 'MF');
+    const damGrandfather = marePedigree.find(e => e.position === 'F');
     if (damGrandfather && damGrandfather.factorTypes.length > 0) {
       theories.push({
         type: 'ATAVISM',
@@ -526,7 +526,7 @@ export function calcAtavism(
 // ─────────────────────────────────────────
 
 export function calcDamSireBonus(marePedigree: AncestorEntry[]): BreedingTheory[] {
-  const damSire = marePedigree.find(e => e.position === 'MF');
+  const damSire = marePedigree.find(e => e.position === 'F');
   if (!damSire) return [];
 
   const hasFamousFactor = damSire.factorTypes.some(f =>

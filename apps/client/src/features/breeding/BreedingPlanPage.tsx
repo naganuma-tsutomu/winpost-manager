@@ -10,13 +10,22 @@ const PLAN_STATUS_CONFIG = {
   CANCELLED: { label: '取消',     icon: XCircle,    color: '#64748b', bg: 'rgba(100,116,139,0.15)' },
 };
 
-const BASE_GAME_YEAR = 1985;
-const MAX_GAME_YEAR = 2090;
+const BASE_GAME_YEAR = 1970;
+const MAX_GAME_YEAR = 2100;
 
-function genYears() {
-  const years: number[] = [];
-  for (let y = BASE_GAME_YEAR; y <= MAX_GAME_YEAR; y++) years.push(y);
-  return years;
+function useGameYear() {
+  const [year, setYear] = useState(() => {
+    const saved = localStorage.getItem('winpost_current_year');
+    // Default to the current real year, or 2025 as it's WP10 2025
+    return saved ? parseInt(saved, 10) : new Date().getFullYear();
+  });
+
+  const updateYear = (y: number) => {
+    setYear(y);
+    localStorage.setItem('winpost_current_year', y.toString());
+  };
+
+  return [year, updateYear] as const;
 }
 
 function PlanCard({ plan, onStatusChange, onDelete }: {
@@ -92,7 +101,7 @@ function PlanCard({ plan, onStatusChange, onDelete }: {
 
 export function BreedingPlanPage() {
   const queryClient = useQueryClient();
-  const [selectedYear, setSelectedYear] = useState(1990);
+  const [selectedYear, setSelectedYear] = useGameYear();
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ stallionId: '', mareId: '', memo: '' });
 
@@ -133,8 +142,6 @@ export function BreedingPlanPage() {
   const completedList = plans.filter((p) => p.status === 'COMPLETED');
   const cancelledList = plans.filter((p) => p.status === 'CANCELLED');
 
-  const years = genYears();
-
   return (
     <>
       <div className="page-header">
@@ -144,24 +151,37 @@ export function BreedingPlanPage() {
       <div className="page-body">
 
         {/* 年度選択バー */}
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 24 }}>
-          <Calendar style={{ color: 'var(--color-text-muted)' }} />
-          <div style={{ display: 'flex', gap: 6, overflowX: 'auto', flex: 1, paddingBlock: 4 }}>
-            {years.slice(0, 30).map(y => (
-              <button key={y}
-                onClick={() => setSelectedYear(y)}
-                style={{
-                  padding: '6px 14px', borderRadius: 'var(--radius-md)',
-                  fontWeight: 600, fontSize: 'var(--text-sm)',
-                  background: y === selectedYear ? 'var(--color-accent-primary)' : 'var(--color-bg-input)',
-                  color: y === selectedYear ? '#fff' : 'var(--color-text-secondary)',
-                  border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
-                  transition: 'all 0.15s',
-                }}>
-                {y}年
-              </button>
-            ))}
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 24, flexWrap: 'wrap' }}>
+          <div style={{ 
+            display: 'flex', alignItems: 'center', gap: 8, 
+            background: 'var(--color-bg-input)', 
+            padding: '4px 16px', 
+            borderRadius: 'var(--radius-md)', 
+            border: '1px solid var(--color-border)',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+          }}>
+            <Calendar style={{ color: 'var(--color-text-muted)', width: 20, height: 20 }} />
+            <input 
+              type="number"
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              min={BASE_GAME_YEAR}
+              max={MAX_GAME_YEAR}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                width: 80,
+                fontSize: '20px',
+                fontWeight: 700,
+                color: 'var(--color-text-primary)',
+                outline: 'none',
+                textAlign: 'center',
+                padding: '4px 0'
+              }}
+            />
+            <span style={{ fontWeight: 600, color: 'var(--color-text-secondary)', fontSize: '18px' }}>年</span>
           </div>
+          
           <button className="btn btn-primary" onClick={() => setShowModal(true)}>
             <Plus /> 種付け追加
           </button>
