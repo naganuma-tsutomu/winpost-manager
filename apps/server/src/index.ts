@@ -12,6 +12,8 @@ import { breedingRouter } from './features/breeding/breeding.routes.js';
 import { ocrRouter } from './features/ocr/ocr.routes.js';
 import { calendarRouter } from './features/calendar/calendar.routes.js';
 import { galleryRouter } from './features/gallery/gallery.routes.js';
+import { racehorseRouter } from './features/racehorses/racehorse.routes.js';
+import { aiRouter } from './features/ai/ai.routes.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -36,6 +38,8 @@ app.use('/api/breeding', breedingRouter);
 app.use('/api/ocr', ocrRouter);
 app.use('/api/calendar', calendarRouter);
 app.use('/api/gallery', galleryRouter);
+app.use('/api/racehorses', racehorseRouter);
+app.use('/api/ai', aiRouter);
 
 // エラーハンドリング
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

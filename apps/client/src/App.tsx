@@ -4,6 +4,7 @@ import { DashboardPage } from './features/dashboard/DashboardPage';
 import { StallionsPage } from './features/horses/StallionsPage';
 import { MaresPage } from './features/horses/MaresPage';
 import { FoalsPage } from './features/foals/FoalsPage';
+import { RacehorsesPage } from './features/racehorses/RacehorsesPage';
 import { LineagesPage } from './features/horses/LineagesPage';
 import { BreedingSimulatorPage } from './features/breeding/BreedingSimulatorPage';
 import { PedigreeEditorPage } from './features/breeding/PedigreeEditorPage';
@@ -18,6 +19,7 @@ function App() {
       <Route element={<Layout />}>
         <Route path="/" element={<DashboardPage />} />
         {/* データ管理 */}
+        <Route path="/racehorses" element={<RacehorsesPage />} />
         <Route path="/stallions" element={<StallionsPage />} />
         <Route path="/mares" element={<MaresPage />} />
         <Route path="/foals" element={<FoalsPage />} />

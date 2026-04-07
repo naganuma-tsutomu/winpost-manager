@@ -14,6 +14,7 @@ import {
   X,
   Clock,
   Images,
+  Activity,
 } from 'lucide-react';
 
 const navItems = [
@@ -21,6 +22,7 @@ const navItems = [
     { to: '/', icon: LayoutDashboard, label: 'ダッシュボード' },
   ]},
   { section: 'データ管理', items: [
+    { to: '/racehorses', icon: Activity, label: '現役馬' },
     { to: '/stallions', icon: Cigarette, label: '種牡馬' },
     { to: '/mares', icon: Heart, label: '繁殖牝馬' },
     { to: '/foals', icon: Baby, label: '幼駒' },
