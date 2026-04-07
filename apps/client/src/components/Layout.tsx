@@ -8,6 +8,7 @@ import {
   Zap,
   TreeDeciduous,
   Calendar,
+  ScanLine,
 } from 'lucide-react';
 
 const navItems = [
@@ -24,6 +25,9 @@ const navItems = [
     { to: '/breeding/simulator', icon: Zap, label: '爆発力計算' },
     { to: '/breeding/pedigree', icon: TreeDeciduous, label: '血統表入力' },
     { to: '/breeding/plans', icon: Calendar, label: '配合計画' },
+  ]},
+  { section: 'OCR 自動入力', items: [
+    { to: '/ocr', icon: ScanLine, label: 'スクショ → 自動入力' },
   ]},
 ];
 

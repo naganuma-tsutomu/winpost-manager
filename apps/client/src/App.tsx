@@ -8,6 +8,7 @@ import { LineagesPage } from './features/horses/LineagesPage';
 import { BreedingSimulatorPage } from './features/breeding/BreedingSimulatorPage';
 import { PedigreeEditorPage } from './features/breeding/PedigreeEditorPage';
 import { BreedingPlanPage } from './features/breeding/BreedingPlanPage';
+import { OcrPage } from './features/ocr/OcrPage';
 
 function App() {
   return (
@@ -23,6 +24,8 @@ function App() {
         <Route path="/breeding/simulator" element={<BreedingSimulatorPage />} />
         <Route path="/breeding/pedigree" element={<PedigreeEditorPage />} />
         <Route path="/breeding/plans" element={<BreedingPlanPage />} />
+        {/* OCR 自動入力 */}
+        <Route path="/ocr" element={<OcrPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

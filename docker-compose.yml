@@ -12,5 +12,25 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  ocr-service:
+    build:
+      context: ./apps/ocr
+      dockerfile: Dockerfile
+    container_name: winpost-ocr
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    # EasyOCR モデルキャッシュを永続化
+    volumes:
+      - ocr_model_cache:/root/.EasyOCR
+    environment:
+      - PYTHONUNBUFFERED=1
+    # GPU なし設定（CPU のみ）
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+
 volumes:
   postgres_data:
+  ocr_model_cache:
