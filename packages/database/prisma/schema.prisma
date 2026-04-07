@@ -59,6 +59,7 @@ model Stallion {
   factors        Factor[]
   pedigreeAsAncestor PedigreeEntry[] @relation("ancestor")
   foalsAsSire    Foal[]         @relation("sire")
+  racehorsesAsSire Racehorse[]  @relation("racehorseSire")
   breedingPlans  BreedingPlan[] @relation("planStallion")
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
@@ -77,6 +78,7 @@ model Mare {
   memo      String?
   factors   Factor[]
   foalsAsDam Foal[]  @relation("dam")
+  racehorsesAsDam Racehorse[] @relation("racehorseDam")
   breedingPlans BreedingPlan[] @relation("planMare")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -243,3 +245,61 @@ enum PlanStatus {
   COMPLETED
   CANCELLED
 }
+
+// ========================================
+// 現役馬
+// ========================================
+
+model Racehorse {
+  id             Int          @id @default(autoincrement())
+  name           String
+  birthYear      Int?
+  gender         Gender
+  sireId         Int?
+  sire           Stallion?    @relation("racehorseSire", fields: [sireId], references: [id])
+  damId          Int?
+  dam            Mare?        @relation("racehorseDam", fields: [damId], references: [id])
+  growthType     GrowthType?
+  surface        Surface?
+  distanceMin    Int?
+  distanceMax    Int?
+  temperament    Temperament? // 気性
+  runningStyle   RunningStyle? // 脚質
+  spirit         EvalMark     @default(NONE) // 精神力などを評価記号代用
+  health         EvalMark     @default(NONE) // 健康
+  autoComment    String?
+  aiComment      String?
+  memo           String?
+  status         HorseStatus  @default(ACTIVE)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+enum Surface {
+  TURF
+  DIRT
+  BOTH
+}
+
+enum HorseStatus {
+  ACTIVE
+  RETIRED
+}
+
+enum Temperament {
+  FIERCE       // 激
+  ROUGH        // 荒
+  NORMAL       // 普通
+  MILD         // 大人
+  SUPER_MILD   // 超
+}
+
+enum RunningStyle {
+  GREAT_ESCAPE // 大逃げ
+  ESCAPE       // 逃げ
+  LEADER       // 先行
+  CLOSER       // 差し
+  CHASER       // 追込
+  VERSATILE    // 自在
+}
+

@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { EVAL_MARKS, GENDERS, GROWTH_TYPES, FLAG_TYPES, estimateSpeed } from '@winpost/shared';
 import type { EvalMark, GrowthType } from '@winpost/shared';
-import { Plus, Pencil, Trash2, Search, Flag, Tag } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Flag, Tag, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,8 +48,8 @@ export function FoalsPage() {
   const [showFlagModal, setShowFlagModal] = useState<number | null>(null);
   const [editId, setEditId] = useState<number | null>(null);
   const [search, setSearch] = useState('');
-  const [filterYear, setFilterYear] = useState('');
-  const [filterFlag, setFilterFlag] = useState('');
+  const [filterYear, setFilterYear] = useState('all');
+  const [filterFlag, setFilterFlag] = useState('all');
 
   const { data: foals = [], isLoading } = useQuery({
     queryKey: ['foals'],
@@ -68,8 +68,8 @@ export function FoalsPage() {
 
   const filtered = foals.filter((f) => {
     const matchSearch = !search || f.name?.toLowerCase().includes(search.toLowerCase());
-    const matchYear = !filterYear || f.birthYear === Number(filterYear);
-    const matchFlag = !filterFlag || f.flags?.some(flag => flag.type === filterFlag);
+    const matchYear = filterYear === 'all' || f.birthYear === Number(filterYear);
+    const matchFlag = filterFlag === 'all' || f.flags?.some(flag => flag.type === filterFlag);
     return matchSearch && matchYear && matchFlag;
   });
 
@@ -99,7 +99,7 @@ export function FoalsPage() {
             <SelectValue placeholder="全年度" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">全年度</SelectItem>
+            <SelectItem value="all">全年度</SelectItem>
             {birthYears.map((y) => (
               <SelectItem key={y} value={y.toString()}>{y}年</SelectItem>
             ))}
@@ -110,7 +110,7 @@ export function FoalsPage() {
             <SelectValue placeholder="全てのフラグ" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">全てのフラグ</SelectItem>
+            <SelectItem value="all">全てのフラグ</SelectItem>
             {Object.entries(FLAG_TYPES).map(([key, label]) => (
               <SelectItem key={key} value={key}>{label}</SelectItem>
             ))}

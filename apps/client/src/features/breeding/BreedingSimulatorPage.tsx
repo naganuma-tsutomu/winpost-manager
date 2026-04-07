@@ -6,32 +6,29 @@ import {
   Zap, AlertTriangle, CheckCircle, Info,
   ChevronRight, Flame, Shield,
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 
 // ─────────────────────────────────────────
 // 爆発力ランク表示
 // ─────────────────────────────────────────
 
-const rankConfig: Record<string, { bg: string; text: string; label: string }> = {
-  'S+': { bg: 'linear-gradient(135deg,#f59e0b,#ef4444)', text: '#fff', label: 'S+' },
-  'S':  { bg: 'linear-gradient(135deg,#6366f1,#8b5cf6)', text: '#fff', label: 'S'  },
-  'A':  { bg: 'rgba(239,68,68,0.2)',   text: '#ef4444', label: 'A'  },
-  'B':  { bg: 'rgba(59,130,246,0.2)',  text: '#3b82f6', label: 'B'  },
-  'C':  { bg: 'rgba(16,185,129,0.2)', text: '#10b981', label: 'C'  },
-  'D':  { bg: 'rgba(100,116,139,0.15)',text: '#64748b', label: 'D'  },
+const rankConfig: Record<string, { bg: string; text: string; label: string; shadow?: string }> = {
+  'S+': { bg: 'bg-gradient-to-br from-amber-500 to-rose-500', text: 'text-white', label: 'S+', shadow: 'shadow-[0_0_24px_rgba(245,158,11,0.5)]' },
+  'S':  { bg: 'bg-gradient-to-br from-indigo-500 to-purple-500', text: 'text-white', label: 'S'  },
+  'A':  { bg: 'bg-rose-100', text: 'text-rose-600', label: 'A' },
+  'B':  { bg: 'bg-blue-100', text: 'text-blue-600', label: 'B' },
+  'C':  { bg: 'bg-emerald-100', text: 'text-emerald-600', label: 'C' },
+  'D':  { bg: 'bg-slate-100', text: 'text-slate-500', label: 'D' },
 };
 
 function RankBadge({ rank, large }: { rank: string; large?: boolean }) {
   const cfg = rankConfig[rank] ?? rankConfig['D'];
-  const size = large ? 72 : 40;
+  const sizeClass = large ? 'w-20 h-20 text-3xl' : 'w-10 h-10 text-lg';
   return (
-    <div style={{
-      width: size, height: size,
-      background: cfg.bg, color: cfg.text,
-      borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontWeight: 900, fontSize: large ? 32 : 18,
-      boxShadow: rank === 'S+' ? '0 0 24px rgba(245,158,11,0.5)' : undefined,
-      flexShrink: 0,
-    }}>
+    <div className={`${sizeClass} ${cfg.bg} ${cfg.text} ${cfg.shadow || ''} rounded-xl flex items-center justify-center font-black flex-shrink-0`}>
       {cfg.label}
     </div>
   );
@@ -42,83 +39,62 @@ function RankBadge({ rank, large }: { rank: string; large?: boolean }) {
 // ─────────────────────────────────────────
 
 const theoryColorByType: Record<string, string> = {
-  NICKS_SINGLE: '#6366f1', NICKS_DOUBLE: '#8b5cf6',
-  NICKS_TRIPLE: '#a855f7', NICKS_FORCE: '#d946ef',
-  INBREED: '#f59e0b', MOTHER_INBREED: '#f59e0b',
-  BLOOD_ACTIVATION: '#06b6d4', BLOOD_ACTIVATION_INBREED: '#0ea5e9',
-  LINE_BREED_PARENT: '#10b981', LINE_BREED_CHILD: '#34d399',
-  LINE_BREED_EXPLOSION: '#2dd4bf',
-  VITALITY_FAMOUS_SIRE: '#f97316', VITALITY_FAMOUS_MARE: '#fb923c',
-  VITALITY_DIFFERENT_LINE: '#fbbf24', VITALITY_COMPLETE: '#eab208',
-  ATAVISM: '#ec4899',
-  DAM_SIRE_BONUS: '#94a3b8',
-  MAIL_LINE_ACTIVATION: '#64748b',
+  NICKS_SINGLE: 'text-indigo-500 border-indigo-200 bg-indigo-50', NICKS_DOUBLE: 'text-purple-500 border-purple-200 bg-purple-50',
+  NICKS_TRIPLE: 'text-purple-600 border-purple-200 bg-purple-50', NICKS_FORCE: 'text-fuchsia-500 border-fuchsia-200 bg-fuchsia-50',
+  INBREED: 'text-amber-500 border-amber-200 bg-amber-50', MOTHER_INBREED: 'text-amber-500 border-amber-200 bg-amber-50',
+  BLOOD_ACTIVATION: 'text-cyan-500 border-cyan-200 bg-cyan-50', BLOOD_ACTIVATION_INBREED: 'text-sky-500 border-sky-200 bg-sky-50',
+  LINE_BREED_PARENT: 'text-emerald-500 border-emerald-200 bg-emerald-50', LINE_BREED_CHILD: 'text-emerald-400 border-emerald-200 bg-emerald-50',
+  LINE_BREED_EXPLOSION: 'text-teal-400 border-teal-200 bg-teal-50',
+  VITALITY_FAMOUS_SIRE: 'text-orange-500 border-orange-200 bg-orange-50', VITALITY_FAMOUS_MARE: 'text-orange-400 border-orange-200 bg-orange-50',
+  VITALITY_DIFFERENT_LINE: 'text-amber-400 border-amber-200 bg-amber-50', VITALITY_COMPLETE: 'text-yellow-500 border-yellow-200 bg-yellow-50',
+  ATAVISM: 'text-pink-500 border-pink-200 bg-pink-50',
+  DAM_SIRE_BONUS: 'text-slate-500 border-slate-200 bg-slate-50',
+  MAIL_LINE_ACTIVATION: 'text-slate-600 border-slate-200 bg-slate-50',
 };
 
 function TheoryCard({ theory }: { theory: BreedingTheory }) {
-  const color = theoryColorByType[theory.type] ?? '#64748b';
+  const colorClass = theoryColorByType[theory.type] ?? 'text-slate-500 border-slate-200 bg-slate-50';
+  
+  // Parse colors to get text color for icon
+  const iconColor = colorClass.split(' ').find(c => c.startsWith('text-'));
+  
   return (
-    <div style={{
-      background: 'var(--color-bg-input)',
-      border: `1px solid ${color}40`,
-      borderLeft: `4px solid ${color}`,
-      borderRadius: 'var(--radius-md)',
-      padding: '12px 16px',
-      display: 'flex', gap: 12, alignItems: 'flex-start',
-    }}>
-      <div style={{ flexShrink: 0 }}>
-        <Zap style={{ width: 16, height: 16, color }} />
+    <div className={`border-l-4 rounded-md p-3 flex gap-3 items-start ${colorClass}`}>
+      <div className="flex-shrink-0 mt-0.5">
+        <Zap className={`w-4 h-4 ${iconColor}`} />
       </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <span style={{ fontWeight: 700, fontSize: 'var(--text-sm)', color }}>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-1 flex-wrap">
+          <span className={`font-bold text-sm ${iconColor}`}>
             {theory.label}
           </span>
-          <span style={{
-            fontSize: 11, fontWeight: 700,
-            background: `${color}25`, color,
-            padding: '1px 6px', borderRadius: 20,
-          }}>
+          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-white/60 ${iconColor} border border-current/20`}>
             +{theory.power}pt
           </span>
           {theory.subPower > 0 && (
-            <span style={{
-              fontSize: 11, fontWeight: 700,
-              background: 'rgba(16,185,129,0.2)', color: '#10b981',
-              padding: '1px 6px', borderRadius: 20,
-            }}>
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-600">
               サブ +{theory.subPower}
             </span>
           )}
           {theory.risk > 0 && (
-            <span style={{
-              fontSize: 11, fontWeight: 700,
-              background: 'rgba(239,68,68,0.2)', color: '#ef4444',
-              padding: '1px 6px', borderRadius: 20,
-            }}>
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-600">
               危険 +{theory.risk}
             </span>
           )}
           {theory.risk < 0 && (
-            <span style={{
-              fontSize: 11, fontWeight: 700,
-              background: 'rgba(16,185,129,0.2)', color: '#10b981',
-              padding: '1px 6px', borderRadius: 20,
-            }}>
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-600">
               危険 {theory.risk}
             </span>
           )}
         </div>
-        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
+        <div className="text-xs text-slate-600 mb-1.5 opacity-90">
           {theory.detail}
         </div>
-        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 6 }}>
+        <div className="flex gap-1 flex-wrap">
           {theory.tags.map(tag => (
-            <span key={tag} style={{
-              fontSize: 10, fontWeight: 600,
-              background: `${color}15`, color,
-              padding: '1px 6px', borderRadius: 20,
-            }}>{tag}</span>
+            <span key={tag} className={`text-[9px] font-semibold px-1.5 py-[1px] rounded-full bg-white/50 ${iconColor}`}>
+              {tag}
+            </span>
           ))}
         </div>
       </div>
@@ -134,90 +110,85 @@ function ResultPanel({ result, stallionName, mareName }: {
   result: BreedingResult; stallionName: string; mareName: string;
 }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div className="flex flex-col gap-4">
       {/* サマリーカード */}
-      <div className="card" style={{
-        background: 'linear-gradient(145deg,rgba(30,41,59,0.9),rgba(15,23,42,0.95))',
-        border: '1px solid var(--color-border-focus)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-          <RankBadge rank={result.rank} large />
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', marginBottom: 4 }}>
-              {stallionName} × {mareName}
-            </div>
-            <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-              <div>
-                <div style={{ fontSize: 'var(--text-2xl)', fontWeight: 800, color: '#f59e0b' }}>
-                  {result.totalPower}
+      <Card className="bg-gradient-to-br from-slate-800 to-slate-900 border-slate-700 text-white shadow-lg">
+        <CardContent className="p-6">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+            <RankBadge rank={result.rank} large />
+            <div className="flex-1 w-full text-center sm:text-left">
+              <div className="text-xs text-slate-400 mb-3 font-medium">
+                {stallionName} <span className="text-slate-500 mx-1">×</span> {mareName}
+              </div>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                  <div className="text-3xl font-black text-amber-400">
+                    {result.totalPower}
+                  </div>
+                  <div className="text-[11px] text-slate-400 flex items-center justify-center sm:justify-start gap-1 mt-1 font-medium">
+                    <Flame className="w-3 h-3" /> 総爆発力
+                  </div>
                 </div>
-                <div style={{ fontSize: 11, color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <Flame style={{ width: 12, height: 12 }} /> 総爆発力
+                <div>
+                  <div className="text-3xl font-black text-emerald-400">
+                    {result.subPower}
+                  </div>
+                  <div className="text-[11px] text-slate-400 flex items-center justify-center sm:justify-start gap-1 mt-1 font-medium">
+                    <Zap className="w-3 h-3" /> サブパラ爆発
+                  </div>
+                </div>
+                <div>
+                  <div className={`text-3xl font-black ${result.totalRisk >= 6 ? 'text-rose-400' : result.totalRisk >= 3 ? 'text-amber-400' : 'text-slate-400'}`}>
+                    {result.totalRisk}
+                  </div>
+                  <div className="text-[11px] text-slate-400 flex items-center justify-center sm:justify-start gap-1 mt-1 font-medium">
+                    <Shield className="w-3 h-3" /> 危険度
+                  </div>
+                </div>
+                <div>
+                  <div className="text-3xl font-black text-indigo-400">
+                    {result.theories.length}
+                  </div>
+                  <div className="text-[11px] text-slate-400 flex items-center justify-center sm:justify-start gap-1 mt-1 font-medium">
+                    <CheckCircle className="w-3 h-3" /> 成立理論
+                  </div>
                 </div>
               </div>
-              <div>
-                <div style={{ fontSize: 'var(--text-2xl)', fontWeight: 800, color: '#10b981' }}>
-                  {result.subPower}
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <Zap style={{ width: 12, height: 12 }} /> サブパラ爆発
-                </div>
+              <div className="mt-4 text-[13px] text-slate-300 leading-relaxed bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                {result.summary}
               </div>
-              <div>
-                <div style={{
-                  fontSize: 'var(--text-2xl)', fontWeight: 800,
-                  color: result.totalRisk >= 6 ? '#ef4444' : result.totalRisk >= 3 ? '#f59e0b' : '#64748b',
-                }}>
-                  {result.totalRisk}
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <Shield style={{ width: 12, height: 12 }} /> 危険度
-                </div>
-              </div>
-              <div>
-                <div style={{ fontSize: 'var(--text-2xl)', fontWeight: 800, color: '#6366f1' }}>
-                  {result.theories.length}
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <CheckCircle style={{ width: 12, height: 12 }} /> 成立理論
-                </div>
-              </div>
-            </div>
-            <div style={{ marginTop: 8, fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}>
-              {result.summary}
             </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* 危険度警告 */}
       {result.totalRisk >= 6 && (
-        <div style={{
-          background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
-          borderRadius: 'var(--radius-md)', padding: '10px 16px',
-          display: 'flex', alignItems: 'center', gap: 10,
-          color: '#ef4444', fontSize: 'var(--text-sm)',
-        }}>
-          <AlertTriangle style={{ width: 18, height: 18, flexShrink: 0 }} />
+        <div className="bg-rose-50 border border-rose-200 rounded-lg p-4 flex items-center gap-3 text-rose-600 text-sm font-medium shadow-sm">
+          <AlertTriangle className="w-5 h-5 flex-shrink-0" />
           危険度が高い配合です。両親の健康状態を確認してください。
         </div>
       )}
 
       {/* 理論一覧 */}
       {result.theories.length === 0 ? (
-        <div className="empty-state" style={{ padding: 32 }}>
-          <Info />
-          <h3>配合理論は成立していません</h3>
-          <p>血統表を登録すると、より詳細な判定が可能になります</p>
+        <div className="bg-white rounded-xl border border-dashed border-slate-300 flex flex-col items-center justify-center p-12 text-center text-slate-500">
+          <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-3">
+            <Info className="w-6 h-6 text-slate-400" />
+          </div>
+          <h3 className="font-semibold text-slate-700">配合理論は成立していません</h3>
+          <p className="text-sm mt-1">血統表を登録すると、より詳細な判定が可能になります</p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--color-text-secondary)' }}>
-            成立した配合理論
+        <div className="flex flex-col gap-2.5">
+          <div className="text-sm font-bold text-slate-500 flex items-center gap-2 mb-1">
+            <CheckCircle className="w-4 h-4" /> 成立した配合理論
           </div>
-          {result.theories.map((t, i) => (
-            <TheoryCard key={i} theory={t} />
-          ))}
+          <div className="grid gap-2.5">
+            {result.theories.map((t, i) => (
+              <TheoryCard key={i} theory={t} />
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -229,136 +200,159 @@ function ResultPanel({ result, stallionName, mareName }: {
 // ─────────────────────────────────────────
 
 export function BreedingSimulatorPage() {
-  const [stallionId, setStallionId] = useState<number | null>(null);
-  const [mareId, setMareId] = useState<number | null>(null);
+  const [stallionId, setStallionId] = useState<string>('none');
+  const [mareId, setMareId] = useState<string>('none');
   const [result, setResult] = useState<BreedingCalculateResponse | null>(null);
 
   const { data: stallions = [] } = useQuery({ queryKey: ['stallions'], queryFn: api.stallions.list });
   const { data: mares = [] } = useQuery({ queryKey: ['mares'], queryFn: api.mares.list });
 
+  const numStallionId = stallionId !== 'none' ? Number(stallionId) : null;
+  const numMareId = mareId !== 'none' ? Number(mareId) : null;
+
   const calcMutation = useMutation({
-    mutationFn: () => api.breeding.calculate(stallionId!, mareId!),
+    mutationFn: () => api.breeding.calculate(numStallionId!, numMareId!),
     onSuccess: (data) => setResult(data),
   });
 
   const handleCalculate = useCallback(() => {
-    if (!stallionId || !mareId) return;
+    if (!numStallionId || !numMareId) return;
     calcMutation.mutate();
-  }, [stallionId, mareId, calcMutation]);
+  }, [numStallionId, numMareId, calcMutation]);
 
-  const selectedStallion = stallions.find((s) => s.id === stallionId);
-  const selectedMare = mares.find((m) => m.id === mareId);
+  const selectedStallion = stallions.find((s) => s.id === numStallionId);
+  const selectedMare = mares.find((m) => m.id === numMareId);
 
   return (
-    <>
-      <div className="page-header">
-        <h1>配合シミュレーター</h1>
-        <p>種牡馬と繁殖牝馬を選択して、爆発力と成立する配合理論を計算します</p>
+    <div className="space-y-6">
+      <div className="border-b border-border pb-4">
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900">配合シミュレーター</h1>
+        <p className="text-slate-500 mt-1">種牡馬と繁殖牝馬を選択して、爆発力と成立する配合理論を計算します</p>
       </div>
-      <div className="page-body">
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, alignItems: 'start' }}>
 
-          {/* 左: 選択フォーム */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            {/* 種牡馬選択 */}
-            <div className="card">
-              <div className="card-header" style={{ marginBottom: 12 }}>
-                <h2 className="card-title" style={{ fontSize: 'var(--text-base)' }}>🐎 種牡馬</h2>
-              </div>
-              <select className="form-select" value={stallionId ?? ''} onChange={e => {
-                setStallionId(e.target.value ? Number(e.target.value) : null);
-                setResult(null);
-              }}>
-                <option value="">── 種牡馬を選択 ──</option>
-                {stallions.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
+        {/* 左: 選択フォーム */}
+        <div className="flex flex-col gap-5">
+          {/* 種牡馬選択 */}
+          <Card className="border-slate-200 shadow-sm">
+            <CardHeader className="bg-slate-50/50 border-b border-slate-100 py-4">
+              <CardTitle className="text-base flex items-center gap-2">
+                <span className="text-xl">🐎</span> 種牡馬
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-5 space-y-4">
+              <Select value={stallionId} onValueChange={(v) => { setStallionId(v); setResult(null); }}>
+                <SelectTrigger className="bg-white">
+                  <SelectValue placeholder="── 種牡馬を選択 ──" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">── 種牡馬を選択 ──</SelectItem>
+                  {stallions.map((s) => (
+                    <SelectItem key={s.id} value={s.id.toString()}>{s.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               {selectedStallion && (
-                <div style={{ marginTop: 12, padding: '10px 14px', background: 'var(--color-bg-input)', borderRadius: 'var(--radius-md)' }}>
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
-                    <span className="badge badge-info">{selectedStallion.childLineage?.parentLineage?.name}</span>
-                    <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                  <div className="flex gap-2 flex-wrap mb-2 items-center">
+                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                      {selectedStallion.childLineage?.parentLineage?.name}
+                    </Badge>
+                    <span className="text-xs text-slate-500 font-medium">
                       {selectedStallion.childLineage?.name}
                     </span>
                   </div>
-                  <div className="factor-tags">
+                  <div className="flex flex-wrap gap-1">
                     {selectedStallion.factors?.map((f) => (
-                      <span key={f.id} className="factor-tag">{f.type}</span>
+                      <Badge key={f.id} variant="secondary" className="text-[10px] font-normal bg-white text-slate-600 border border-slate-200">
+                        {f.type}
+                      </Badge>
                     ))}
                   </div>
                 </div>
               )}
-            </div>
+            </CardContent>
+          </Card>
 
-            {/* 繁殖牝馬選択 */}
-            <div className="card">
-              <div className="card-header" style={{ marginBottom: 12 }}>
-                <h2 className="card-title" style={{ fontSize: 'var(--text-base)' }}>🌸 繁殖牝馬</h2>
-              </div>
-              <select className="form-select" value={mareId ?? ''} onChange={e => {
-                setMareId(e.target.value ? Number(e.target.value) : null);
-                setResult(null);
-              }}>
-                <option value="">── 繁殖牝馬を選択 ──</option>
-                {mares.map((m) => (
-                  <option key={m.id} value={m.id}>{m.name}</option>
-                ))}
-              </select>
+          {/* 繁殖牝馬選択 */}
+          <Card className="border-slate-200 shadow-sm">
+            <CardHeader className="bg-slate-50/50 border-b border-slate-100 py-4">
+              <CardTitle className="text-base flex items-center gap-2">
+                <span className="text-xl">🌸</span> 繁殖牝馬
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-5 space-y-4">
+              <Select value={mareId} onValueChange={(v) => { setMareId(v); setResult(null); }}>
+                <SelectTrigger className="bg-white">
+                  <SelectValue placeholder="── 繁殖牝馬を選択 ──" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">── 繁殖牝馬を選択 ──</SelectItem>
+                  {mares.map((m) => (
+                    <SelectItem key={m.id} value={m.id.toString()}>{m.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               {selectedMare && (
-                <div style={{ marginTop: 12, padding: '10px 14px', background: 'var(--color-bg-input)', borderRadius: 'var(--radius-md)' }}>
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
-                    <span className="badge badge-success">{selectedMare.lineage}</span>
+                <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                  <div className="flex gap-2 flex-wrap mb-2 items-center">
+                    <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
+                      {selectedMare.lineage}
+                    </Badge>
                   </div>
-                  <div className="factor-tags">
+                  <div className="flex flex-wrap gap-1">
                     {selectedMare.factors?.map((f) => (
-                      <span key={f.id} className="factor-tag">{f.type}</span>
+                      <Badge key={f.id} variant="secondary" className="text-[10px] font-normal bg-white text-slate-600 border border-slate-200">
+                        {f.type}
+                      </Badge>
                     ))}
                   </div>
                 </div>
               )}
-            </div>
+            </CardContent>
+          </Card>
 
-            {/* 計算ボタン */}
-            <button
-              className="btn btn-primary btn-lg"
-              style={{ width: '100%', fontSize: 'var(--text-base)', padding: '14px 0' }}
-              disabled={!stallionId || !mareId || calcMutation.isPending}
-              onClick={handleCalculate}
-            >
-              {calcMutation.isPending ? (
-                <><div className="loading-spinner" style={{ width: 18, height: 18 }} /> 計算中...</>
-              ) : (
-                <><Zap /> 爆発力を計算する <ChevronRight /></>
-              )}
-            </button>
-
-            {calcMutation.isError && (
-              <div style={{ color: 'var(--color-accent-danger)', fontSize: 'var(--text-sm)', textAlign: 'center' }}>
-                計算中にエラーが発生しました。
-              </div>
-            )}
-          </div>
-
-          {/* 右: 計算結果 */}
-          <div>
-            {result ? (
-              <ResultPanel
-                result={result.result}
-                stallionName={result.stallion?.name ?? ''}
-                mareName={result.mare?.name ?? ''}
-              />
+          {/* 計算ボタン */}
+          <Button
+            size="lg"
+            className="w-full text-base py-6 shadow-md transition-all hover:scale-[1.02]"
+            disabled={!numStallionId || !numMareId || calcMutation.isPending}
+            onClick={handleCalculate}
+          >
+            {calcMutation.isPending ? (
+              <><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3" /> 計算中...</>
             ) : (
-              <div className="card" style={{ minHeight: 320, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
-                <Zap style={{ width: 48, height: 48, color: 'var(--color-accent-primary)', opacity: 0.3 }} />
-                <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>
-                  種牡馬と繁殖牝馬を選択して計算してください
-                </p>
-              </div>
+              <><Zap className="w-5 h-5 mr-2" /> 爆発力を計算する <ChevronRight className="w-5 h-5 ml-1" /></>
             )}
-          </div>
+          </Button>
+
+          {calcMutation.isError && (
+            <div className="text-rose-500 font-medium text-sm text-center bg-rose-50 p-3 rounded-md border border-rose-100">
+              計算中にエラーが発生しました。
+            </div>
+          )}
+        </div>
+
+        {/* 右: 計算結果 */}
+        <div className="flex-1">
+          {result ? (
+            <ResultPanel
+              result={result.result}
+              stallionName={result.stallion?.name ?? ''}
+              mareName={result.mare?.name ?? ''}
+            />
+          ) : (
+            <Card className="min-h-[400px] flex items-center justify-center border-dashed border-2 border-slate-200 bg-slate-50/50 shadow-none">
+              <CardContent className="flex flex-col items-center gap-4 text-slate-400 p-8">
+                <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center">
+                  <Zap className="w-10 h-10 text-slate-300" />
+                </div>
+                <p className="text-sm font-medium">種牡馬と繁殖牝馬を選択して計算してください</p>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
-    </>
+    </div>
   );
 }

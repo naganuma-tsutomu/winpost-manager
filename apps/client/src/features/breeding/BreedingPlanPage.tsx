@@ -2,12 +2,27 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import type { BreedingPlan } from '@winpost/shared';
-import { Plus, Trash2, CheckCircle, XCircle, Clock, Calendar } from 'lucide-react';
+import { Plus, Trash2, CheckCircle, XCircle, Clock, Calendar, Check, X } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 const PLAN_STATUS_CONFIG = {
-  PLANNED:   { label: '予定', icon: Clock,        color: '#6366f1', bg: 'rgba(99,102,241,0.15)'  },
-  COMPLETED: { label: '実施済み', icon: CheckCircle, color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
-  CANCELLED: { label: '取消',     icon: XCircle,    color: '#64748b', bg: 'rgba(100,116,139,0.15)' },
+  PLANNED:   { label: '予定', icon: Clock,        color: 'text-indigo-600', bg: 'bg-indigo-100/50', border: 'border-indigo-200' },
+  COMPLETED: { label: '実施済み', icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-100/50', border: 'border-emerald-200' },
+  CANCELLED: { label: '取消',     icon: XCircle,    color: 'text-slate-500', bg: 'bg-slate-100', border: 'border-slate-200' },
 };
 
 const BASE_GAME_YEAR = 1970;
@@ -16,7 +31,6 @@ const MAX_GAME_YEAR = 2100;
 function useGameYear() {
   const [year, setYear] = useState(() => {
     const saved = localStorage.getItem('winpost_current_year');
-    // Default to the current real year, or 2025 as it's WP10 2025
     return saved ? parseInt(saved, 10) : new Date().getFullYear();
   });
 
@@ -33,69 +47,61 @@ function PlanCard({ plan, onStatusChange, onDelete }: {
   onStatusChange: (id: number, status: string) => void;
   onDelete: (id: number) => void;
 }) {
-  const cfg = PLAN_STATUS_CONFIG[plan.status] ?? PLAN_STATUS_CONFIG.PLANNED;
+  const cfg = PLAN_STATUS_CONFIG[plan.status as keyof typeof PLAN_STATUS_CONFIG] ?? PLAN_STATUS_CONFIG.PLANNED;
   const Icon = cfg.icon;
+  
   return (
-    <div style={{
-      background: 'var(--color-bg-input)',
-      border: `1px solid var(--color-border)`,
-      borderLeft: `4px solid ${cfg.color}`,
-      borderRadius: 'var(--radius-md)',
-      padding: '12px 16px',
-      display: 'flex', gap: 12, alignItems: 'flex-start',
-    }}>
-      <div style={{
-        width: 36, height: 36, borderRadius: 8,
-        background: cfg.bg, color: cfg.color,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flexShrink: 0,
-      }}>
-        <Icon style={{ width: 18, height: 18 }} />
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <span style={{ fontWeight: 700, fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)' }}>
-            {plan.stallion?.name ?? '?'}
-            <span style={{ color: 'var(--color-text-muted)', margin: '0 4px' }}>×</span>
-            {plan.mare?.name ?? '?'}
-          </span>
-          <span style={{
-            fontSize: 10, fontWeight: 700,
-            background: cfg.bg, color: cfg.color,
-            padding: '2px 8px', borderRadius: 20,
-          }}>{cfg.label}</span>
-        </div>
-        {plan.memo && (
-          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', marginBottom: 6 }}>
-            {plan.memo}
+    <Card className={`border-l-4 overflow-hidden mb-3 transition-colors ${cfg.border}`}>
+      <div className={`p-4 flex flex-col sm:flex-row sm:items-center gap-4 ${plan.status === 'CANCELLED' ? 'opacity-60 bg-slate-50/50' : 'bg-white'}`}>
+        <div className="flex items-start flex-1 min-w-0">
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-4 flex-shrink-0 ${cfg.bg} ${cfg.color}`}>
+            <Icon className="w-5 h-5" />
           </div>
-        )}
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-3 mb-1 flex-wrap">
+              <span className={`font-bold text-base ${plan.status === 'CANCELLED' ? 'text-slate-500' : 'text-slate-900'} truncate`}>
+                {plan.stallion?.name ?? '?'}
+                <span className="text-slate-400 mx-1.5 text-sm">×</span>
+                {plan.mare?.name ?? '?'}
+              </span>
+              <Badge variant="outline" className={`${cfg.bg} ${cfg.color} ${cfg.border} font-bold px-2 border`}>
+                {cfg.label}
+              </Badge>
+            </div>
+            {plan.memo && (
+              <p className="text-sm text-slate-500 mt-1 line-clamp-2">
+                {plan.memo}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap pl-14 sm:pl-0">
           {plan.status !== 'COMPLETED' && (
-            <button className="btn btn-success" style={{ padding: '3px 10px', fontSize: 11 }}
+            <Button size="sm" variant="outline" className="bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100 hover:text-emerald-700 h-8 px-3"
               onClick={() => onStatusChange(plan.id, 'COMPLETED')}>
-              ✓ 実施済み
-            </button>
+              <Check className="w-3 h-3 mr-1" /> 実施済み
+            </Button>
           )}
           {plan.status !== 'CANCELLED' && (
-            <button className="btn" style={{ padding: '3px 10px', fontSize: 11, background: 'rgba(100,116,139,0.2)', color: 'var(--color-text-secondary)' }}
+            <Button size="sm" variant="outline" className="text-slate-500 border-slate-200 hover:bg-slate-100 h-8 px-3"
               onClick={() => onStatusChange(plan.id, 'CANCELLED')}>
-              取消
-            </button>
+              <X className="w-3 h-3 mr-1" /> 取消
+            </Button>
           )}
           {plan.status !== 'PLANNED' && (
-            <button className="btn" style={{ padding: '3px 10px', fontSize: 11, background: 'rgba(99,102,241,0.2)', color: '#6366f1' }}
+            <Button size="sm" variant="outline" className="bg-indigo-50 text-indigo-600 border-indigo-200 hover:bg-indigo-100 hover:text-indigo-700 h-8 px-3"
               onClick={() => onStatusChange(plan.id, 'PLANNED')}>
-              予定に戻す
-            </button>
+              <Clock className="w-3 h-3 mr-1" /> 予定に戻す
+            </Button>
           )}
-          <button className="btn btn-danger" style={{ padding: '3px 10px', fontSize: 11, marginLeft: 'auto' }}
-            onClick={() => onDelete(plan.id)}>
-            <Trash2 style={{ width: 12, height: 12 }} />
-          </button>
+          <Button size="icon" variant="ghost" className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 ml-auto sm:ml-0"
+            onClick={() => { if(confirm('この計画を削除しますか？')) onDelete(plan.id); }}>
+            <Trash2 className="w-4 h-4" />
+          </Button>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -103,7 +109,7 @@ export function BreedingPlanPage() {
   const queryClient = useQueryClient();
   const [selectedYear, setSelectedYear] = useGameYear();
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ stallionId: '', mareId: '', memo: '' });
+  const [form, setForm] = useState({ stallionId: 'none', mareId: 'none', memo: '' });
 
   const { data: plans = [], isLoading } = useQuery({
     queryKey: ['breeding-plans', selectedYear],
@@ -118,7 +124,7 @@ export function BreedingPlanPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['breeding-plans', selectedYear] });
       setShowModal(false);
-      setForm({ stallionId: '', mareId: '', memo: '' });
+      setForm({ stallionId: 'none', mareId: 'none', memo: '' });
     },
   });
 
@@ -143,159 +149,156 @@ export function BreedingPlanPage() {
   const cancelledList = plans.filter((p) => p.status === 'CANCELLED');
 
   return (
-    <>
-      <div className="page-header">
-        <h1>配合計画</h1>
-        <p>年度ごとの種付けプランを管理します</p>
+    <div className="space-y-6">
+      <div className="border-b border-border pb-4">
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900">配合計画</h1>
+        <p className="text-slate-500 mt-1">年度ごとの種付けプランを管理します</p>
       </div>
-      <div className="page-body">
 
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         {/* 年度選択バー */}
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 24, flexWrap: 'wrap' }}>
-          <div style={{ 
-            display: 'flex', alignItems: 'center', gap: 8, 
-            background: 'var(--color-bg-input)', 
-            padding: '4px 16px', 
-            borderRadius: 'var(--radius-md)', 
-            border: '1px solid var(--color-border)',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-          }}>
-            <Calendar style={{ color: 'var(--color-text-muted)', width: 20, height: 20 }} />
-            <input 
-              type="number"
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(Number(e.target.value))}
-              min={BASE_GAME_YEAR}
-              max={MAX_GAME_YEAR}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                width: 80,
-                fontSize: '20px',
-                fontWeight: 700,
-                color: 'var(--color-text-primary)',
-                outline: 'none',
-                textAlign: 'center',
-                padding: '4px 0'
-              }}
-            />
-            <span style={{ fontWeight: 600, color: 'var(--color-text-secondary)', fontSize: '18px' }}>年</span>
-          </div>
-          
-          <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-            <Plus /> 種付け追加
-          </button>
+        <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-200">
+          <Calendar className="text-slate-400 w-5 h-5 mr-1" />
+          <input 
+            type="number"
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(Number(e.target.value))}
+            min={BASE_GAME_YEAR}
+            max={MAX_GAME_YEAR}
+            className="w-20 text-xl font-bold text-slate-900 outline-none text-center bg-transparent appearance-none"
+          />
+          <span className="font-semibold text-slate-500 text-lg">年</span>
         </div>
-
-        {/* 統計サマリー */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
-          {[
-            { label: '予定', count: plannedList.length, color: '#6366f1', bg: 'rgba(99,102,241,0.15)' },
-            { label: '実施済み', count: completedList.length, color: '#10b981', bg: 'rgba(16,185,129,0.15)' },
-            { label: '取消', count: cancelledList.length, color: '#64748b', bg: 'rgba(100,116,139,0.1)' },
-          ].map(s => (
-            <div key={s.label} style={{
-              background: s.bg, borderRadius: 'var(--radius-md)',
-              padding: '12px 16px', textAlign: 'center',
-            }}>
-              <div style={{ fontSize: 24, fontWeight: 800, color: s.color }}>{s.count}</div>
-              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>{s.label}</div>
-            </div>
-          ))}
-        </div>
-
-        {isLoading ? (
-          <div className="loading-container"><div className="loading-spinner" /></div>
-        ) : plans.length === 0 ? (
-          <div className="empty-state">
-            <Calendar />
-            <h3>{selectedYear}年の配合計画はまだありません</h3>
-            <p>「種付け追加」ボタンから配合計画を登録できます</p>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-            {plannedList.length > 0 && (
-              <div>
-                <div className="section-label" style={{ marginBottom: 12 }}>予定</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {plannedList.map((p) => (
-                    <PlanCard key={p.id} plan={p}
-                      onStatusChange={(id, status) => updateStatusMutation.mutate({ id, status })}
-                      onDelete={(id) => deleteMutation.mutate(id)} />
-                  ))}
-                </div>
-              </div>
-            )}
-            {completedList.length > 0 && (
-              <div>
-                <div className="section-label" style={{ marginBottom: 12 }}>実施済み</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {completedList.map((p) => (
-                    <PlanCard key={p.id} plan={p}
-                      onStatusChange={(id, status) => updateStatusMutation.mutate({ id, status })}
-                      onDelete={(id) => deleteMutation.mutate(id)} />
-                  ))}
-                </div>
-              </div>
-            )}
-            {cancelledList.length > 0 && (
-              <div>
-                <div className="section-label" style={{ marginBottom: 12, opacity: 0.6 }}>取消</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, opacity: 0.6 }}>
-                  {cancelledList.map((p) => (
-                    <PlanCard key={p.id} plan={p}
-                      onStatusChange={(id, status) => updateStatusMutation.mutate({ id, status })}
-                      onDelete={(id) => deleteMutation.mutate(id)} />
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+        
+        <Button onClick={() => setShowModal(true)} size="lg" className="shadow-sm">
+          <Plus className="w-5 h-5 mr-2" /> 種付け追加
+        </Button>
       </div>
+
+      {/* 統計サマリー */}
+      <div className="grid grid-cols-3 gap-4">
+        {[
+          { label: '予定', count: plannedList.length, color: 'text-indigo-600', bg: 'bg-indigo-50 border-indigo-100' },
+          { label: '実施済み', count: completedList.length, color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-100' },
+          { label: '取消', count: cancelledList.length, color: 'text-slate-600', bg: 'bg-slate-50 border-slate-200' },
+        ].map(s => (
+          <Card key={s.label} className={`${s.bg} border shadow-none`}>
+            <CardContent className="p-4 text-center">
+              <div className={`text-3xl font-black ${s.color}`}>{s.count}</div>
+              <div className={`text-xs font-semibold uppercase tracking-wider mt-1 opacity-70 ${s.color}`}>{s.label}</div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center p-12 text-slate-500">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mr-3"></div>
+          読み込み中...
+        </div>
+      ) : plans.length === 0 ? (
+        <div className="bg-white rounded-xl shadow-sm border border-dashed border-slate-300 flex flex-col items-center justify-center p-16 text-center">
+          <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+            <Calendar className="w-8 h-8 text-slate-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-slate-800">{selectedYear}年の配合計画はまだありません</h3>
+          <p className="text-slate-500 mt-1">「種付け追加」ボタンから配合計画を登録できます</p>
+        </div>
+      ) : (
+        <div className="space-y-8">
+          {plannedList.length > 0 && (
+            <section>
+              <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest pl-1 mb-3">予定</h3>
+              <div>
+                {plannedList.map((p) => (
+                  <PlanCard key={p.id} plan={p}
+                    onStatusChange={(id, status) => updateStatusMutation.mutate({ id, status })}
+                    onDelete={(id) => deleteMutation.mutate(id)} />
+                ))}
+              </div>
+            </section>
+          )}
+          {completedList.length > 0 && (
+            <section>
+              <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest pl-1 mb-3">実施済み</h3>
+              <div>
+                {completedList.map((p) => (
+                  <PlanCard key={p.id} plan={p}
+                    onStatusChange={(id, status) => updateStatusMutation.mutate({ id, status })}
+                    onDelete={(id) => deleteMutation.mutate(id)} />
+                ))}
+              </div>
+            </section>
+          )}
+          {cancelledList.length > 0 && (
+            <section>
+              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest pl-1 mb-3">取消</h3>
+              <div className="opacity-80 flex flex-col">
+                {cancelledList.map((p) => (
+                  <PlanCard key={p.id} plan={p}
+                    onStatusChange={(id, status) => updateStatusMutation.mutate({ id, status })}
+                    onDelete={(id) => deleteMutation.mutate(id)} />
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+      )}
 
       {/* 登録モーダル */}
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 480 }}>
-            <div className="modal-header">
-              <h2 className="modal-title">種付け計画を追加</h2>
-              <button className="modal-close" onClick={() => setShowModal(false)}>×</button>
-            </div>
-            <div className="modal-body">
-              <div className="form-group">
-                <label className="form-label">年度 <span style={{ color: 'var(--color-accent-danger)' }}>*</span></label>
-                <select className="form-select" value={selectedYear} disabled>
-                  <option>{selectedYear}年</option>
-                </select>
+        <Dialog open={true} onOpenChange={() => setShowModal(false)}>
+          <DialogContent className="sm:max-w-[480px]">
+            <DialogHeader>
+              <DialogTitle>種付け計画を追加</DialogTitle>
+            </DialogHeader>
+
+            <div className="grid gap-5 py-4">
+              <div className="space-y-2">
+                <Label>年度</Label>
+                <div className="flex items-center gap-2 p-2 bg-slate-50 border border-slate-200 rounded-md text-slate-600 font-medium">
+                  {selectedYear}年
+                </div>
               </div>
-              <div className="form-group">
-                <label className="form-label">種牡馬 <span style={{ color: 'var(--color-accent-danger)' }}>*</span></label>
-                <select className="form-select" value={form.stallionId}
-                  onChange={e => setForm(f => ({ ...f, stallionId: e.target.value }))}>
-                  <option value="">── 選択してください ──</option>
-                  {stallions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
+
+              <div className="space-y-2">
+                <Label>種牡馬 <span className="text-rose-500">*</span></Label>
+                <Select value={form.stallionId} onValueChange={v => setForm({ ...form, stallionId: v })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="── 選択してください ──" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">── 選択してください ──</SelectItem>
+                    {stallions.map((s) => <SelectItem key={s.id} value={s.id.toString()}>{s.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="form-group">
-                <label className="form-label">繁殖牝馬 <span style={{ color: 'var(--color-accent-danger)' }}>*</span></label>
-                <select className="form-select" value={form.mareId}
-                  onChange={e => setForm(f => ({ ...f, mareId: e.target.value }))}>
-                  <option value="">── 選択してください ──</option>
-                  {mares.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-                </select>
+
+              <div className="space-y-2">
+                <Label>繁殖牝馬 <span className="text-rose-500">*</span></Label>
+                <Select value={form.mareId} onValueChange={v => setForm({ ...form, mareId: v })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="── 選択してください ──" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">── 選択してください ──</SelectItem>
+                    {mares.map((m) => <SelectItem key={m.id} value={m.id.toString()}>{m.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="form-group">
-                <label className="form-label">メモ</label>
-                <textarea className="form-textarea" rows={2} value={form.memo}
-                  onChange={e => setForm(f => ({ ...f, memo: e.target.value }))}
+
+              <div className="space-y-2">
+                <Label>メモ</Label>
+                <Textarea rows={2} value={form.memo}
+                  onChange={e => setForm({ ...form, memo: e.target.value })}
                   placeholder="覚書など..." />
               </div>
             </div>
-            <div className="modal-footer">
-              <button className="btn" onClick={() => setShowModal(false)}>キャンセル</button>
-              <button className="btn btn-primary"
-                disabled={!form.stallionId || !form.mareId || createMutation.isPending}
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowModal(false)}>キャンセル</Button>
+              <Button 
+                disabled={form.stallionId === 'none' || form.mareId === 'none' || createMutation.isPending}
                 onClick={() => createMutation.mutate({
                   year: selectedYear,
                   stallionId: Number(form.stallionId),
@@ -303,11 +306,11 @@ export function BreedingPlanPage() {
                   memo: form.memo || null,
                 })}>
                 {createMutation.isPending ? '登録中...' : '登録'}
-              </button>
-            </div>
-          </div>
-        </div>
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
-    </>
+    </div>
   );
 }
