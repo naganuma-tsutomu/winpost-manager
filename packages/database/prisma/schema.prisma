@@ -1,0 +1,214 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ========================================
+// 系統マスタ
+// ========================================
+
+model ParentLineage {
+  id            Int            @id @default(autoincrement())
+  name          String         @unique
+  childLineages ChildLineage[]
+  createdAt     DateTime       @default(now())
+}
+
+model ChildLineage {
+  id              Int            @id @default(autoincrement())
+  name            String         @unique
+  parentLineageId Int
+  parentLineage   ParentLineage  @relation(fields: [parentLineageId], references: [id])
+  stallions       Stallion[]
+  createdAt       DateTime       @default(now())
+}
+
+// ========================================
+// ニックス相性
+// ========================================
+
+model NicksRelation {
+  id         Int @id @default(autoincrement())
+  lineageAId Int
+  lineageBId Int
+  level      Int // 1-3
+
+  @@unique([lineageAId, lineageBId])
+}
+
+// ========================================
+// 種牡馬
+// ========================================
+
+model Stallion {
+  id             Int            @id @default(autoincrement())
+  name           String         @unique
+  childLineageId Int
+  childLineage   ChildLineage   @relation(fields: [childLineageId], references: [id])
+  speed          Int?
+  stamina        Int?
+  power          Int?
+  guts           Int?
+  wisdom         Int?
+  health         Int?
+  memo           String?
+  factors        Factor[]
+  pedigreeAsAncestor PedigreeEntry[] @relation("ancestor")
+  foalsAsSire    Foal[]         @relation("sire")
+  breedingPlans  BreedingPlan[] @relation("planStallion")
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+// ========================================
+// 繁殖牝馬
+// ========================================
+
+model Mare {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  lineage   String
+  speed     Int?
+  stamina   Int?
+  memo      String?
+  factors   Factor[]
+  foalsAsDam Foal[]  @relation("dam")
+  breedingPlans BreedingPlan[] @relation("planMare")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ========================================
+// 因子
+// ========================================
+
+model Factor {
+  id         Int        @id @default(autoincrement())
+  type       FactorType
+  stallionId Int?
+  stallion   Stallion?  @relation(fields: [stallionId], references: [id], onDelete: Cascade)
+  mareId     Int?
+  mare       Mare?      @relation(fields: [mareId], references: [id], onDelete: Cascade)
+}
+
+enum FactorType {
+  SPEED
+  STAMINA
+  POWER
+  TENACITY
+  AGILITY
+  HEALTH
+  SPIRIT
+  WISDOM
+  FAMOUS_SIRE
+  GREAT_SIRE
+}
+
+// ========================================
+// 血統表
+// ========================================
+
+model PedigreeEntry {
+  id         Int      @id @default(autoincrement())
+  horseType  String   // "stallion" or "mare"
+  horseId    Int
+  ancestorId Int
+  ancestor   Stallion @relation("ancestor", fields: [ancestorId], references: [id])
+  generation Int      // 1=父/母, 2=祖父, etc.
+  position   String   // "F","M","FF","FM","MF","MM" etc.
+
+  @@index([horseType, horseId, generation])
+}
+
+// ========================================
+// 幼駒
+// ========================================
+
+model Foal {
+  id             Int        @id @default(autoincrement())
+  name           String?
+  birthYear      Int
+  gender         Gender
+  sireId         Int?
+  sire           Stallion?  @relation("sire", fields: [sireId], references: [id])
+  damId          Int?
+  dam            Mare?      @relation("dam", fields: [damId], references: [id])
+  kappaMark      EvalMark   @default(NONE)
+  mikaMark       EvalMark   @default(NONE)
+  bodyComment    String?
+  growthType     GrowthType?
+  estimatedSpeed Int?
+  memo           String?
+  flags          FoalFlag[]
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum EvalMark {
+  DOUBLE_CIRCLE
+  CIRCLE
+  TRIANGLE
+  NONE
+}
+
+enum GrowthType {
+  SUPER_EARLY
+  EARLY
+  NORMAL
+  LATE
+  SUPER_LATE
+}
+
+// ========================================
+// フラグ管理
+// ========================================
+
+model FoalFlag {
+  id          Int      @id @default(autoincrement())
+  foalId      Int
+  foal        Foal     @relation(fields: [foalId], references: [id], onDelete: Cascade)
+  type        FlagType
+  description String?
+  targetDate  String?
+
+  @@index([foalId])
+}
+
+enum FlagType {
+  OVERSEAS_SALE
+  KEEP
+  SELL
+  WATCH
+}
+
+// ========================================
+// 配合計画
+// ========================================
+
+model BreedingPlan {
+  id         Int        @id @default(autoincrement())
+  year       Int
+  stallionId Int
+  stallion   Stallion   @relation("planStallion", fields: [stallionId], references: [id])
+  mareId     Int
+  mare       Mare       @relation("planMare", fields: [mareId], references: [id])
+  memo       String?
+  status     PlanStatus @default(PLANNED)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+}
+
+enum PlanStatus {
+  PLANNED
+  COMPLETED
+  CANCELLED
+}
