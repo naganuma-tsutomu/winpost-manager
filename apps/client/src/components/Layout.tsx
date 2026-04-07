@@ -5,6 +5,9 @@ import {
   Heart,
   Baby,
   GitBranch,
+  Zap,
+  TreeDeciduous,
+  Calendar,
 } from 'lucide-react';
 
 const navItems = [
@@ -16,6 +19,11 @@ const navItems = [
     { to: '/mares', icon: Heart, label: '繁殖牝馬' },
     { to: '/foals', icon: Baby, label: '幼駒' },
     { to: '/lineages', icon: GitBranch, label: '系統' },
+  ]},
+  { section: '配合シミュレーター', items: [
+    { to: '/breeding/simulator', icon: Zap, label: '爆発力計算' },
+    { to: '/breeding/pedigree', icon: TreeDeciduous, label: '血統表入力' },
+    { to: '/breeding/plans', icon: Calendar, label: '配合計画' },
   ]},
 ];
 

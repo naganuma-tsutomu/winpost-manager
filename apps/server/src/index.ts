@@ -8,6 +8,7 @@ import { stallionRouter } from './features/horses/stallion.routes.js';
 import { mareRouter } from './features/horses/mare.routes.js';
 import { lineageRouter } from './features/horses/lineage.routes.js';
 import { foalRouter } from './features/foals/foal.routes.js';
+import { breedingRouter } from './features/breeding/breeding.routes.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -27,6 +28,7 @@ app.use('/api/stallions', stallionRouter);
 app.use('/api/mares', mareRouter);
 app.use('/api/lineages', lineageRouter);
 app.use('/api/foals', foalRouter);
+app.use('/api/breeding', breedingRouter);
 
 // エラーハンドリング
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

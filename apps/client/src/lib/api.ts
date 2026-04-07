@@ -54,4 +54,27 @@ export const api = {
     addFlag: (foalId: number, data: any) => request<any>(`/foals/${foalId}/flags`, { method: 'POST', body: JSON.stringify(data) }),
     deleteFlag: (foalId: number, flagId: number) => request<void>(`/foals/${foalId}/flags/${flagId}`, { method: 'DELETE' }),
   },
+  // 配合シミュレーター
+  breeding: {
+    calculate: (stallionId: number, mareId: number) =>
+      request<any>('/breeding/calculate', { method: 'POST', body: JSON.stringify({ stallionId, mareId }) }),
+    getPedigree: (type: 'stallion' | 'mare', id: number) =>
+      request<any[]>(`/breeding/pedigree/${type}/${id}`),
+    savePedigree: (type: 'stallion' | 'mare', id: number, entries: any[]) =>
+      request<any[]>(`/breeding/pedigree/${type}/${id}`, { method: 'POST', body: JSON.stringify({ entries }) }),
+    plans: {
+      list: (year?: number) => {
+        const query = year ? `?year=${year}` : '';
+        return request<any[]>(`/breeding/plans${query}`);
+      },
+      create: (data: any) => request<any>('/breeding/plans', { method: 'POST', body: JSON.stringify(data) }),
+      update: (id: number, data: any) => request<any>(`/breeding/plans/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+      delete: (id: number) => request<void>(`/breeding/plans/${id}`, { method: 'DELETE' }),
+    },
+    nicks: {
+      list: () => request<any[]>('/breeding/nicks'),
+      upsert: (data: any) => request<any>('/breeding/nicks', { method: 'POST', body: JSON.stringify(data) }),
+      delete: (id: number) => request<void>(`/breeding/nicks/${id}`, { method: 'DELETE' }),
+    },
+  },
 };
