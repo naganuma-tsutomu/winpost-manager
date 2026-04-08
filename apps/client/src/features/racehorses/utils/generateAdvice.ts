@@ -4,6 +4,7 @@ export type HorseParams = {
   distanceMax?: number | null;
   growthType?: 'SUPER_EARLY' | 'EARLY' | 'NORMAL' | 'LATE' | 'SUPER_LATE' | null;
   gender?: 'MALE' | 'FEMALE';
+  birthYear?: number | null;
   // 成績
   starts?: number | null;
   wins?: number | null;
@@ -16,18 +17,46 @@ export type HorseParams = {
   intelligence?: string | null;
 };
 
+const CURRENT_YEAR = new Date().getFullYear();
+
 export const generateRuleBasedAdvice = (params: HorseParams): string => {
   if (!params.growthType || !params.surface) return 'データが不足しているため、アドバイスを生成できません。';
 
   const lines: string[] = [];
 
+  // ── 年齢による現況コメント ──
+  const age = params.birthYear != null ? CURRENT_YEAR - params.birthYear : null;
+  if (age != null) {
+    if (age <= 1) {
+      lines.push(`現在${age}歳、まだデビュー前です。調教で基礎能力を高めることに専念しましょう。`);
+    } else if (age === 2) {
+      lines.push('2歳馬です。デビュー戦のタイミングを見計らいながら、慎重にレースを選びましょう。');
+    } else if (age === 3) {
+      lines.push('3歳クラシック世代です。路線選択が将来の価値を大きく左右します。');
+    } else if (age <= 5) {
+      lines.push(`${age}歳の古馬として、能力のピークを迎える時期です。国内外の主要G1制覇を狙いましょう。`);
+    } else if (age === 6) {
+      lines.push('6歳馬です。衰えが出始める前に目標レースを絞り、引退後の繁殖・種牡馬入りも視野に入れましょう。');
+    } else {
+      lines.push(`${age}歳のベテランです。無理なローテーションは避け、状態を優先した出走管理が重要です。`);
+    }
+  }
+
   // ── 成長型による育成方針 ──
   if (params.growthType === 'SUPER_EARLY' || params.growthType === 'EARLY') {
-    lines.push('早熟傾向のため、2歳戦から積極的に使いましょう。ピークが短いので3歳中に目標レースを集中させるのが理想です。');
+    if (age != null && age >= 5) {
+      lines.push('早熟型は既にピークを過ぎている可能性があります。無理なローテーションは避けてください。');
+    } else {
+      lines.push('早熟傾向のため、2歳戦から積極的に使いましょう。ピークが短いので3歳中に目標レースを集中させるのが理想です。');
+    }
   } else if (params.growthType === 'NORMAL') {
     lines.push('標準的な成長型です。3歳クラシック～古馬まで幅広い活躍が見込めます。');
   } else {
-    lines.push('晩成傾向です。3歳までは自己条件でじっくり育て、古馬路線での本格化を狙いましょう。');
+    if (age != null && age <= 3) {
+      lines.push('晩成傾向です。今はじっくり育てる時期。古馬になってからの本格化に期待しましょう。');
+    } else {
+      lines.push('晩成傾向です。3歳までは自己条件でじっくり育て、古馬路線での本格化を狙いましょう。');
+    }
   }
 
   // ── 距離・馬場適性による目標レース ──

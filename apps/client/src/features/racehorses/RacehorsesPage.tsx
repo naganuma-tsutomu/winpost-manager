@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import type { Racehorse } from './api/useRacehorses.js';
 import { useRacehorses, useDeleteRacehorse } from './api/useRacehorses.js';
+
+const CURRENT_YEAR = new Date().getFullYear();
+const calcAge = (birthYear?: number) =>
+  birthYear != null ? CURRENT_YEAR - birthYear : null;
 import { RacehorseFormDialog } from './RacehorseFormDialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -68,6 +72,11 @@ export const RacehorsesPage: React.FC = () => {
                       <span className="text-sm font-normal text-blue-500 bg-blue-50 px-2 rounded-full">牡</span>
                     ) : (
                       <span className="text-sm font-normal text-pink-500 bg-pink-50 px-2 rounded-full">牝</span>
+                    )}
+                    {calcAge(horse.birthYear) != null && (
+                      <span className="text-sm font-normal text-slate-500 bg-slate-100 px-2 rounded-full">
+                        {calcAge(horse.birthYear)}歳
+                      </span>
                     )}
                   </CardTitle>
                   <CardDescription className="mt-1">

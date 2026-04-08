@@ -216,6 +216,15 @@ export const RacehorseFormDialog: React.FC<DialogProps> = ({ isOpen, onOpenChang
             <Input {...register('name', { required: true })} placeholder="トウカイテイオー" />
           </div>
 
+          {/* 生年・性別・状態 */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>生年（ゲーム内年）</Label>
+              <Input type="number" {...register('birthYear', { valueAsNumber: true })} placeholder="例: 2023" />
+            </div>
+            <div />
+          </div>
+
           {/* 性別・状態 */}
           <div className="grid grid-cols-2 gap-4">
             <RadioGroup
