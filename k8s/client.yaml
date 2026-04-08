@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: winpost-client
+  labels:
+    app: winpost-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: winpost-client
+  template:
+    metadata:
+      labels:
+        app: winpost-client
+    spec:
+      containers:
+        - name: client
+          # CI/CD (GitHub Actions) 等でタグは自動置換される想定
+          image: ghcr.io/naganuma-tsutomu/winpost-client:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: winpost-client-service
+spec:
+  selector:
+    app: winpost-client
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80

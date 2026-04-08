@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: winpost-server
+  labels:
+    app: winpost-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: winpost-server
+  template:
+    metadata:
+      labels:
+        app: winpost-server
+    spec:
+      containers:
+        - name: server
+          image: ghcr.io/naganuma-tsutomu/winpost-server:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - secretRef:
+                name: winpost-secrets
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: winpost-server-service
+spec:
+  selector:
+    app: winpost-server
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000

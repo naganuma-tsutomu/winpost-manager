@@ -1,0 +1,66 @@
+name: Build and Dispatch
+on:
+  push:
+    branches: [ "main" ]
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # --- 1. Client のビルドとPush ---
+      - name: Build and Push Client
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/client/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ github.repository_owner }}/winpost-client:${{ github.sha }}
+
+      # --- 2. Server のビルドとPush ---
+      - name: Build and Push Server
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/server/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ github.repository_owner }}/winpost-server:${{ github.sha }}
+
+      # --- 3. OCR のビルドとPush ---
+      - name: Build and Push OCR
+        uses: docker/build-push-action@v5
+        with:
+          context: apps/ocr
+          file: apps/ocr/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ github.repository_owner }}/winpost-ocr:${{ github.sha }}
+
+      # --- デプロイのトリガー ---
+      - name: Trigger Infra Deploy
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          repository: naganuma-tsutomu/proxmox-iac-project
+          token: ${{ secrets.INFRA_REPO_PAT }}
+          event-type: deploy-winpost-manager
+          client-payload: |
+            {
+              "image_tag": "${{ github.sha }}",
+              "client_image": "${{ env.REGISTRY }}/${{ github.repository_owner }}/winpost-client",
+              "server_image": "${{ env.REGISTRY }}/${{ github.repository_owner }}/winpost-server",
+              "ocr_image": "${{ env.REGISTRY }}/${{ github.repository_owner }}/winpost-ocr"
+            }
