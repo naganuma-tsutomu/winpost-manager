@@ -103,38 +103,7 @@ export type BreedingRank = 'S+' | 'S' | 'A' | 'B' | 'C' | 'D';
 // ユーティリティ関数
 // ─────────────────────────────────────────
 
-/** 父系祖先のposition一覧 (Fから始まる) */
-function getSireSidePositions(gen: number): string[] {
-  return buildPositions('F', gen);
-}
 
-/** 母系祖先のposition一覧 (Mから始まる) */
-function getDamSidePositions(gen: number): string[] {
-  return buildPositions('M', gen);
-}
-
-function buildPositions(side: 'F' | 'M', gen: number): string[] {
-  if (gen === 1) return [side];
-  const results: string[] = [];
-  const recurse = (current: string, depth: number) => {
-    if (depth === gen) {
-      results.push(current);
-      return;
-    }
-    recurse(current + 'F', depth + 1);
-    recurse(current + 'M', depth + 1);
-  };
-  recurse(side, 1);
-  return results;
-}
-
-/** 指定世代(3代前)の先祖position一覧 (8頭分) */
-function getGen3Positions(): string[] {
-  return [
-    'FFF', 'FFM', 'FMF', 'FMM',
-    'MFF', 'MFM', 'MMF', 'MMM',
-  ];
-}
 
 /** AncestorEntry から IDのSetを作成 */
 function buildAncestorSet(pedigree: AncestorEntry[]): Map<number, AncestorEntry[]> {
@@ -281,7 +250,7 @@ export function calcBloodActivation(
   marePedigree: AncestorEntry[],
   hasInbreed: boolean,
 ): BreedingTheory[] {
-  const gen3Positions = getGen3Positions();
+
 
   // 3代前先祖のparentLineageIdを収集 (父側4頭 + 母側4頭)
   const sireGen2 = stallionPedigree.filter(e => e.generation === 2);
@@ -356,7 +325,7 @@ export function calcLineBreed(
     entry.count++;
   }
 
-  for (const [parentId, data] of parentLineageCounts) {
+  for (const [_, data] of parentLineageCounts) {
     if (data.count >= 3 && data.ids.size >= 2) {
       // 爆発型: 3頭以上で子系統が異なる
       theories.push({

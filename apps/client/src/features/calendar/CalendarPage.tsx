@@ -118,7 +118,7 @@ export function CalendarPage() {
       month,
       weeks: Array.from({ length: 4 }, (_, i) => i + 1).map((week) => {
         // その月週のイベントをマージ
-        const weekEvents = [];
+        const weekEvents: any[] = [];
         const fixed = FIXED_EVENTS.filter(e => e.month === month && e.week === week);
         if (fixed.length > 0) {
           weekEvents.push(...fixed.map(f => ({ ...f, isFixed: true, id: `fixed-${f.title}` })));
