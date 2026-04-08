@@ -93,7 +93,7 @@ export const RacehorsesPage: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-muted-foreground block text-xs">気性・脚質</span>
-                  {horse.temperament ? horse.temperament : '-'} / {horse.runningStyle ? horse.runningStyle : '-'}
+                  {horse.temperament ? horse.temperament : '-'} / {horse.runningStyles?.length ? horse.runningStyles.join('・') : '-'}
                 </div>
               </div>
 

@@ -15,7 +15,7 @@ const racehorseCreateSchema = z.object({
   distanceMin: z.number().int().optional().nullable(),
   distanceMax: z.number().int().optional().nullable(),
   temperament: z.enum(['FIERCE', 'ROUGH', 'NORMAL', 'MILD', 'SUPER_MILD']).optional().nullable(),
-  runningStyle: z.enum(['GREAT_ESCAPE', 'ESCAPE', 'LEADER', 'CLOSER', 'CHASER', 'VERSATILE']).optional().nullable(),
+  runningStyles: z.array(z.enum(['GREAT_ESCAPE', 'ESCAPE', 'LEADER', 'CLOSER', 'CHASER', 'VERSATILE'])).optional().default([]),
   spirit: evalMarkEnum.optional().default('NONE'),
   health: evalMarkEnum.optional().default('NONE'),
   // 成績

@@ -141,6 +141,18 @@ model Foal {
   dam            Mare?      @relation("dam", fields: [damId], references: [id])
   kappaMark      EvalMark   @default(NONE)
   mikaMark       EvalMark   @default(NONE)
+  managerMark    EvalMark   @default(NONE)
+  secretaryMark  EvalMark   @default(NONE)
+  nagamineMark   EvalMark   @default(NONE)
+  // 詳細な牧場長コメント
+  commentGuts         CommentGrade @default(NONE) // 勝負根性
+  commentExplosiveness CommentGrade @default(NONE) // 瞬発力
+  commentWisdom       CommentGrade @default(NONE) // 賢さ
+  commentSpirit       CommentGrade @default(NONE) // 精神力
+  commentHealth       CommentGrade @default(NONE) // 健康
+  commentPower        CommentGrade @default(NONE) // パワー
+  commentFlexibility  CommentGrade @default(NONE) // 柔軟性
+
   bodyComment    String?
   growthType     GrowthType?
   estimatedSpeed Int?
@@ -168,6 +180,13 @@ enum GrowthType {
   NORMAL
   LATE
   SUPER_LATE
+}
+
+enum CommentGrade {
+  NONE
+  GOOD        // かなりの
+  EXCELLENT   // 見事な
+  OUTSTANDING // 素晴らしい
 }
 
 // ========================================
@@ -264,7 +283,7 @@ model Racehorse {
   distanceMin    Int?
   distanceMax    Int?
   temperament    Temperament? // 気性
-  runningStyle   RunningStyle? // 脚質
+  runningStyles  RunningStyle[] // 脚質（複数可）
   spirit         EvalMark     @default(NONE) // 精神力などを評価記号代用
   health         EvalMark     @default(NONE) // 健康
   // 成績
