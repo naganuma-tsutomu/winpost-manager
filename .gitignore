@@ -23,3 +23,6 @@ packages/database/prisma/migrations/
 
 # Docker
 postgres_data/
+
+# Runtime generated
+apps/server/settings.json
