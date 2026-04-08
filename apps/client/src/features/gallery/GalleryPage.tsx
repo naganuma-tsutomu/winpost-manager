@@ -93,7 +93,7 @@ export function GalleryPage() {
             <div className="relative aspect-video bg-slate-900 overflow-hidden flex items-center justify-center">
               {entry.imageUrl ? (
                 <img 
-                  src={`http://localhost:3001${entry.imageUrl}`} 
+                  src={`/api${entry.imageUrl}`} 
                   alt={entry.title} 
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                 />
