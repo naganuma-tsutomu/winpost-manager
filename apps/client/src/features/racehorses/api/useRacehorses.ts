@@ -16,7 +16,7 @@ export interface Racehorse {
   distanceMin?: number;
   distanceMax?: number;
   temperament?: 'FIERCE' | 'ROUGH' | 'NORMAL' | 'MILD' | 'SUPER_MILD';
-  runningStyles: ('GREAT_ESCAPE' | 'ESCAPE' | 'LEADER' | 'CLOSER' | 'CHASER' | 'VERSATILE')[];
+  runningStyles?: ('GREAT_ESCAPE' | 'ESCAPE' | 'LEADER' | 'CLOSER' | 'CHASER' | 'VERSATILE')[];
   spirit: string; // EvalMark
   health: string; // EvalMark
   // 成績

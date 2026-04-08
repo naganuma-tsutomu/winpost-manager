@@ -118,7 +118,7 @@ export const RacehorseFormDialog: React.FC<DialogProps> = ({ isOpen, onOpenChang
 
   const formValues = watch();
   const surface = formValues.surface;
-  const runningStyles = formValues.runningStyles ?? [];
+  const runningStyles = (formValues.runningStyles ?? []) as string[];
 
   // 馬場適性チェックボックス状態
   const turfChecked = surface === 'TURF' || surface === 'BOTH';
@@ -135,8 +135,12 @@ export const RacehorseFormDialog: React.FC<DialogProps> = ({ isOpen, onOpenChang
 
   // 脚質チェックボックス（複数選択可）
   const handleRunningStyleToggle = (val: string) => {
-    const current = runningStyles as string[];
-    setValue('runningStyles', current.includes(val) ? current.filter(v => v !== val) : [...current, val] as any);
+    setValue(
+      'runningStyles',
+      (runningStyles.includes(val)
+        ? runningStyles.filter((v) => v !== val)
+        : [...runningStyles, val]) as any,
+    );
   };
 
   useEffect(() => {
@@ -281,7 +285,7 @@ export const RacehorseFormDialog: React.FC<DialogProps> = ({ isOpen, onOpenChang
               { value: 'CHASER', label: '追込' },
               { value: 'VERSATILE', label: '自在' },
             ]}
-            selected={runningStyles as any[]}
+            selected={runningStyles}
             onToggle={handleRunningStyleToggle}
           />
 
