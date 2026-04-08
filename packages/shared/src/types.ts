@@ -98,6 +98,16 @@ export interface Foal {
   dam: { id: number; name: string } | null;
   kappaMark: EvalMark;
   mikaMark: EvalMark;
+  managerMark: EvalMark;
+  secretaryMark: EvalMark;
+  nagamineMark: EvalMark;
+  commentGuts: string;
+  commentExplosiveness: string;
+  commentWisdom: string;
+  commentSpirit: string;
+  commentHealth: string;
+  commentPower: string;
+  commentFlexibility: string;
   bodyComment: string | null;
   growthType: GrowthType | null;
   estimatedSpeed: number | null;

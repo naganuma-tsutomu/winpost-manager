@@ -114,14 +114,17 @@ export const RacehorsesPage: React.FC = () => {
                 </div>
               )}
 
-              {(horse.speed || horse.stamina || horse.power || horse.guts || horse.intelligence) && (
-                <div className="grid grid-cols-5 gap-1 text-xs text-center">
+              {(horse.speed || horse.guts || horse.acceleration || horse.power || horse.health || horse.intelligence || horse.spirit || horse.flexibility) && (
+                <div className="grid grid-cols-4 gap-1 text-xs text-center">
                   {([
                     { label: 'SP', value: horse.speed },
-                    { label: 'ST', value: horse.stamina },
+                    { label: '根性', value: horse.guts },
+                    { label: '瞬発', value: horse.acceleration },
                     { label: 'PW', value: horse.power },
-                    { label: '根', value: horse.guts },
-                    { label: '賢', value: horse.intelligence },
+                    { label: '健康', value: horse.health },
+                    { label: '賢さ', value: horse.intelligence },
+                    { label: '精神', value: horse.spirit },
+                    { label: '柔軟', value: horse.flexibility },
                   ] as { label: string; value: string | undefined }[]).map(({ label, value }) => (
                     <div key={label} className="bg-slate-100 dark:bg-slate-800 rounded p-1">
                       <div className="text-muted-foreground">{label}</div>

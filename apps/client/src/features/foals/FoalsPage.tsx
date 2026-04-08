@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
-import { EVAL_MARKS, GENDERS, GROWTH_TYPES, FLAG_TYPES, estimateSpeed } from '@winpost/shared';
+import { EVAL_MARKS, GENDERS, GROWTH_TYPES, FLAG_TYPES, estimateSpeed, generateFoalAdvice } from '@winpost/shared';
 import type { EvalMark, GrowthType } from '@winpost/shared';
 import { Plus, Pencil, Trash2, Search, Flag, Tag, X } from 'lucide-react';
 
@@ -26,6 +26,54 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent } from '@/components/ui/card';
+
+const COMMENT_GRADES: Record<string, string> = {
+  NONE: 'なし',
+  GOOD: 'かなりの（○）',
+  EXCELLENT: '見事な（◎）',
+  OUTSTANDING: '素晴らしい（☆）',
+};
+
+// 攻略サイト（https://kamioka-games.com/WP10/comment-all）に基づくゲーム内コメントマッピング
+const FIELD_COMMENT_OPTIONS: Record<string, { value: string; label: string }[]> = {
+  commentExplosiveness: [
+    { value: 'NONE', label: 'なし / 瞬発力に欠ける (G~F+)' },
+    { value: 'GOOD', label: 'いいバネを持っています (E~D+)' },
+    { value: 'OUTSTANDING', label: 'すばらしいバネの持ち主です (C~S+)' },
+  ],
+  commentWisdom: [
+    { value: 'NONE', label: 'なし / 物覚えが悪い (G~F+)' },
+    { value: 'GOOD', label: '賢そうな顔つきをしています (E~D+)' },
+    { value: 'OUTSTANDING', label: 'とても利発そう・よい目をしています (C~S+)' },
+  ],
+  commentSpirit: [
+    { value: 'NONE', label: 'なし / 我慢強さが足りません (G~F+)' },
+    { value: 'GOOD', label: '我慢強いところがありますね (E~D+)' },
+    { value: 'OUTSTANDING', label: 'かなり我慢強いところがあります (C~S+)' },
+  ],
+  commentHealth: [
+    { value: 'NONE', label: 'なし / 健康面に少し不安 (G~F+)' },
+    { value: 'GOOD', label: '丈夫な体の持ち主です (E~D+)' },
+    { value: 'OUTSTANDING', label: '骨太で、とにかく体が丈夫ですね (C~S+)' },
+  ],
+  commentFlexibility: [
+    { value: 'NONE', label: 'なし / ちょっと動きが硬いです (G~F+)' },
+    { value: 'GOOD', label: '体が柔らかいです (E~D+)' },
+    { value: 'OUTSTANDING', label: 'この柔らかさは、かなりのものです (C~S+)' },
+  ],
+  commentPower: [
+    { value: 'NONE', label: 'なし / ぼんやりとしている (F+以下)' },
+    { value: 'GOOD', label: 'なかなかの身体能力を持っていそう (C~B+)' },
+    { value: 'EXCELLENT', label: 'かなりの身体能力を持っていそう (Aコンボ)' },
+    { value: 'OUTSTANDING', label: '卓越した身体能力の持ち主 (Aコンボ)' },
+  ],
+  commentGuts: [
+    { value: 'NONE', label: 'なし / とてもおとなしい (F+以下)' },
+    { value: 'GOOD', label: 'なかなかの雰囲気・つかみかねる (C~B+)' },
+    { value: 'OUTSTANDING', label: 'かなりヤンチャなところがあります (A以上)' },
+  ],
+};
 
 const evalMarkClass: Record<string, string> = {
   DOUBLE_CIRCLE: 'text-rose-600 font-black',
@@ -240,6 +288,16 @@ interface FoalForm {
   damId: number | '';
   kappaMark: string;
   mikaMark: string;
+  managerMark: string;
+  secretaryMark: string;
+  nagamineMark: string;
+  commentGuts: string;
+  commentExplosiveness: string;
+  commentWisdom: string;
+  commentSpirit: string;
+  commentHealth: string;
+  commentPower: string;
+  commentFlexibility: string;
   bodyComment: string;
   growthType: string;
   memo: string;
@@ -248,6 +306,9 @@ interface FoalForm {
 const EMPTY_FOAL_FORM: FoalForm = {
   name: '', birthYear: new Date().getFullYear(), gender: 'MALE',
   sireId: '', damId: '', kappaMark: 'NONE', mikaMark: 'NONE',
+  managerMark: 'NONE', secretaryMark: 'NONE', nagamineMark: 'NONE',
+  commentGuts: 'NONE', commentExplosiveness: 'NONE', commentWisdom: 'NONE',
+  commentSpirit: 'NONE', commentHealth: 'NONE', commentPower: 'NONE', commentFlexibility: 'NONE',
   bodyComment: '', growthType: '', memo: '',
 };
 
@@ -274,6 +335,16 @@ function FoalModal({ editId, onClose }: { editId: number | null; onClose: () => 
         damId: existing.damId ?? '',
         kappaMark: existing.kappaMark,
         mikaMark: existing.mikaMark,
+        managerMark: existing.managerMark || 'NONE',
+        secretaryMark: existing.secretaryMark || 'NONE',
+        nagamineMark: existing.nagamineMark || 'NONE',
+        commentGuts: existing.commentGuts || 'NONE',
+        commentExplosiveness: existing.commentExplosiveness || 'NONE',
+        commentWisdom: existing.commentWisdom || 'NONE',
+        commentSpirit: existing.commentSpirit || 'NONE',
+        commentHealth: existing.commentHealth || 'NONE',
+        commentPower: existing.commentPower || 'NONE',
+        commentFlexibility: existing.commentFlexibility || 'NONE',
         bodyComment: existing.bodyComment || '',
         growthType: existing.growthType || '',
         memo: existing.memo || '',
@@ -286,6 +357,30 @@ function FoalModal({ editId, onClose }: { editId: number | null; onClose: () => 
     estimateSpeed(form.kappaMark as EvalMark, form.mikaMark as EvalMark, (form.growthType || undefined) as GrowthType | undefined),
     [form.kappaMark, form.mikaMark, form.growthType]
   );
+
+  const advice = useMemo(() => {
+    return generateFoalAdvice(
+      form.kappaMark as EvalMark,
+      form.mikaMark as EvalMark,
+      form.managerMark as EvalMark,
+      form.secretaryMark as EvalMark,
+      form.nagamineMark as EvalMark,
+      form.growthType || undefined,
+      {
+        guts: form.commentGuts,
+        explosiveness: form.commentExplosiveness,
+        wisdom: form.commentWisdom,
+        spirit: form.commentSpirit,
+        health: form.commentHealth,
+        power: form.commentPower,
+        flexibility: form.commentFlexibility
+      }
+    );
+  }, [
+    form.kappaMark, form.mikaMark, form.managerMark, form.secretaryMark, form.nagamineMark,
+    form.growthType, form.commentGuts, form.commentExplosiveness, form.commentWisdom, 
+    form.commentSpirit, form.commentHealth, form.commentPower, form.commentFlexibility
+  ]);
 
   const mutation = useMutation({
     mutationFn: (data: unknown) => isEdit ? api.foals.update(editId!, data) : api.foals.create(data),
@@ -361,28 +456,10 @@ function FoalModal({ editId, onClose }: { editId: number | null; onClose: () => 
           <div className="space-y-4 border border-amber-100 bg-amber-50/30 p-4 rounded-lg">
             <div className="flex items-center gap-2 text-amber-700">
               <Tag className="w-5 h-5" />
-              <span className="font-semibold">評価印 & スピード推測</span>
+              <span className="font-semibold">評価印 & 成長型</span>
             </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label>河童木の印</Label>
-                <Select value={form.kappaMark} onValueChange={(val) => setForm({ ...form, kappaMark: val })}>
-                  <SelectTrigger className="bg-white"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(EVAL_MARKS).map(([key, label]) => <SelectItem key={key} value={key}>{label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>美香の印</Label>
-                <Select value={form.mikaMark} onValueChange={(val) => setForm({ ...form, mikaMark: val })}>
-                  <SelectTrigger className="bg-white"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(EVAL_MARKS).map(([key, label]) => <SelectItem key={key} value={key}>{label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
+            <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
+              <div className="space-y-2 lg:col-span-2">
                 <Label>成長型</Label>
                 <Select value={form.growthType || 'none'} onValueChange={(val) => setForm({ ...form, growthType: val === 'none' ? '' : val })}>
                   <SelectTrigger className="bg-white"><SelectValue placeholder="不明" /></SelectTrigger>
@@ -392,16 +469,104 @@ function FoalModal({ editId, onClose }: { editId: number | null; onClose: () => 
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2 lg:col-span-1">
+                <Label>美香</Label>
+                <Select value={form.mikaMark} onValueChange={(val) => setForm({ ...form, mikaMark: val })}>
+                  <SelectTrigger className="bg-white px-2"><SelectValue /></SelectTrigger>
+                  <SelectContent>{Object.entries(EVAL_MARKS).map(([key, label]) => <SelectItem key={key} value={key}>{label}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2 lg:col-span-1">
+                <Label>河童木</Label>
+                <Select value={form.kappaMark} onValueChange={(val) => setForm({ ...form, kappaMark: val })}>
+                  <SelectTrigger className="bg-white px-2"><SelectValue /></SelectTrigger>
+                  <SelectContent>{Object.entries(EVAL_MARKS).map(([key, label]) => <SelectItem key={key} value={key}>{label}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2 lg:col-span-1">
+                <Label className="text-slate-500">牧場長</Label>
+                <Select value={form.managerMark} onValueChange={(val) => setForm({ ...form, managerMark: val })}>
+                  <SelectTrigger className="bg-white px-2"><SelectValue /></SelectTrigger>
+                  <SelectContent>{Object.entries(EVAL_MARKS).map(([key, label]) => <SelectItem key={key} value={key}>{label}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2 lg:col-span-1">
+                <Label className="text-slate-500">秘書</Label>
+                <Select value={form.secretaryMark} onValueChange={(val) => setForm({ ...form, secretaryMark: val })}>
+                  <SelectTrigger className="bg-white px-2"><SelectValue /></SelectTrigger>
+                  <SelectContent>{Object.entries(EVAL_MARKS).map(([key, label]) => <SelectItem key={key} value={key}>{label}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
             </div>
 
-            <div className="flex items-center gap-4 bg-white p-3 rounded-md border border-slate-200 mt-2">
-              <Badge variant="outline" className={`w-10 h-10 rounded-full flex items-center justify-center p-0 text-lg font-bold ${speedRankClass[estimate.rank] || speedRankClass.D}`}>
-                {estimate.rank}
-              </Badge>
-              <div>
-                <div className="font-bold text-slate-800">スコア: {estimate.score}</div>
-                <div className="text-sm text-slate-500">{estimate.description}</div>
+            <Card className="bg-white border-0 shadow-sm mt-3 border-l-4 border-l-amber-400">
+              <CardContent className="p-4 space-y-3">
+                <h4 className="font-bold text-slate-800 text-base">{advice.summary}</h4>
+                <div className="flex items-center gap-3">
+                  <Badge variant="outline" className={`w-8 h-8 rounded-full flex items-center justify-center p-0 font-bold ${speedRankClass[estimate.rank] || speedRankClass.D}`}>
+                    {estimate.rank}
+                  </Badge>
+                  <div className="text-sm text-slate-600">
+                     <span className="font-semibold text-slate-700">スピード推測: </span>{estimate.description}
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-600">
+                  <div className="bg-slate-50 p-2 rounded">
+                    <span className="font-semibold block mb-1">【美香】サブパラ評価</span>
+                    {advice.subParaAdvice}
+                  </div>
+                  <div className="bg-slate-50 p-2 rounded">
+                    <span className="font-semibold block mb-1">【河童木】成長型とのバランス</span>
+                    {advice.growthAdvice}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="space-y-4 border border-emerald-100 bg-emerald-50/30 p-4 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-emerald-700">
+                <Tag className="w-5 h-5" />
+                <span className="font-semibold">牧場長コメント（能力）</span>
               </div>
+              <span className="text-[10px] text-emerald-600 bg-emerald-100/50 px-2 py-0.5 rounded">
+                ※正確なコメント発生には牧場長の「相馬眼」A以上が必要です
+              </span>
+            </div>
+            
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { key: 'commentGuts', label: '勝負根性', timing: '0歳:9,11,12月1週 / 1歳:10,12月2週' },
+                { key: 'commentExplosiveness', label: '瞬発力', timing: '0歳:9,11,12月1週 / 1歳:10月3週' },
+                { key: 'commentWisdom', label: '賢さ', timing: '0歳:8,9,11,12月3週 / 1歳:9,11月4週' },
+                { key: 'commentSpirit', label: '精神力', timing: '0歳:8,9,11,12月3週 / 1歳:10,12月1週' },
+                { key: 'commentHealth', label: '健康', timing: '1歳:3月1週,4月3週,6月1週,7月4週' },
+                { key: 'commentPower', label: 'パワー', timing: '0歳:8,9,11,12月2週 / 2歳:2月1週〜' },
+                { key: 'commentFlexibility', label: '柔軟性', timing: '0歳:8,9,11,12月2週 / 1歳:10,12月4週' },
+              ].map(f => (
+                <div key={f.key} className="space-y-1">
+                  <div className="flex flex-col">
+                    <Label className="text-xs text-slate-700 font-semibold">{f.label}</Label>
+                    <span className="text-[10px] text-emerald-600/80 leading-tight">{f.timing}</span>
+                  </div>
+                  <Select value={(form as any)[f.key]} onValueChange={(val) => setForm({ ...form, [f.key]: val })}>
+                    <SelectTrigger className="bg-white h-8 text-xs px-2"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {FIELD_COMMENT_OPTIONS[f.key]?.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value} className="text-xs">{opt.label}</SelectItem>
+                      )) || Object.entries(COMMENT_GRADES).map(([key, label]) => (
+                        <SelectItem key={key} value={key} className="text-xs">{label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ))}
+            </div>
+
+            <div className="text-xs text-emerald-800 bg-white p-2 rounded border border-emerald-100">
+              <span className="font-semibold block mb-1">弱点チェック</span>
+              {advice.managerAdvice}
             </div>
           </div>
 

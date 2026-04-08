@@ -17,18 +17,19 @@ export interface Racehorse {
   distanceMax?: number;
   temperament?: 'FIERCE' | 'ROUGH' | 'NORMAL' | 'MILD' | 'SUPER_MILD';
   runningStyles?: ('GREAT_ESCAPE' | 'ESCAPE' | 'LEADER' | 'CLOSER' | 'CHASER' | 'VERSATILE')[];
-  spirit: string; // EvalMark
-  health: string; // EvalMark
   // 成績
   starts?: number;
   wins?: number;
   g1Wins?: number;
   // 能力値（グレード）
-  speed?: string;
-  stamina?: string;
-  power?: string;
-  guts?: string;
-  intelligence?: string;
+  speed?: string;        // スピード
+  guts?: string;         // 勝負根性
+  acceleration?: string; // 瞬発力
+  power?: string;        // パワー
+  health?: string;       // 健康
+  intelligence?: string; // 賢さ
+  spirit?: string;       // 精神力
+  flexibility?: string;  // 柔軟性
   autoComment?: string;
   aiComment?: string;
   memo?: string;

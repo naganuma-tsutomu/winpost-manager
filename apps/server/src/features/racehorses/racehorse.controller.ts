@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { prisma } from '@winpost/database';
 import { z } from 'zod';
 
-const evalMarkEnum = z.enum(['DOUBLE_CIRCLE', 'CIRCLE', 'TRIANGLE', 'NONE']);
+const gradeEnum = z.enum(['S', 'A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'E+', 'E', 'F']).optional().nullable();
 
 const racehorseCreateSchema = z.object({
   name: z.string().min(1),
@@ -16,18 +16,19 @@ const racehorseCreateSchema = z.object({
   distanceMax: z.number().int().optional().nullable(),
   temperament: z.enum(['FIERCE', 'ROUGH', 'NORMAL', 'MILD', 'SUPER_MILD']).optional().nullable(),
   runningStyles: z.array(z.enum(['GREAT_ESCAPE', 'ESCAPE', 'LEADER', 'CLOSER', 'CHASER', 'VERSATILE'])).optional().default([]),
-  spirit: evalMarkEnum.optional().default('NONE'),
-  health: evalMarkEnum.optional().default('NONE'),
   // 成績
   starts: z.number().int().min(0).optional().nullable(),
   wins: z.number().int().min(0).optional().nullable(),
   g1Wins: z.number().int().min(0).optional().nullable(),
   // 能力値（グレード）
-  speed: z.enum(['S', 'A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'E+', 'E', 'F']).optional().nullable(),
-  stamina: z.enum(['S', 'A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'E+', 'E', 'F']).optional().nullable(),
-  power: z.enum(['S', 'A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'E+', 'E', 'F']).optional().nullable(),
-  guts: z.enum(['S', 'A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'E+', 'E', 'F']).optional().nullable(),
-  intelligence: z.enum(['S', 'A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'E+', 'E', 'F']).optional().nullable(),
+  speed: gradeEnum,         // スピード
+  guts: gradeEnum,          // 勝負根性
+  acceleration: gradeEnum,  // 瞬発力
+  power: gradeEnum,         // パワー
+  health: gradeEnum,        // 健康
+  intelligence: gradeEnum,  // 賢さ
+  spirit: gradeEnum,        // 精神力
+  flexibility: gradeEnum,   // 柔軟性
   autoComment: z.string().optional().nullable(),
   aiComment: z.string().optional().nullable(),
   memo: z.string().optional().nullable(),
@@ -86,7 +87,7 @@ export const getRacehorseById = async (req: Request, res: Response) => {
 export const createRacehorse = async (req: Request, res: Response) => {
   try {
     const data = racehorseCreateSchema.parse(req.body);
-    const racehorse = await prisma.racehorse.create({ data });
+    const racehorse = await prisma.racehorse.create({ data: data as any });
     res.status(201).json(racehorse);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -105,7 +106,7 @@ export const updateRacehorse = async (req: Request, res: Response) => {
     const data = racehorseUpdateSchema.parse(req.body);
     const racehorse = await prisma.racehorse.update({
       where: { id: Number(id) },
-      data,
+      data: data as any,
     });
     res.json(racehorse);
   } catch (error) {

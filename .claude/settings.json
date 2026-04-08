@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(pnpm --filter @winpost/shared run build)",
-      "Bash(pnpm --filter @winpost/client exec tsc --noEmit)"
+      "Bash(pnpm --filter @winpost/client exec tsc --noEmit)",
+      "Bash(pnpm --filter client exec tsc --noEmit)",
+      "WebFetch(domain:www.gamecity.ne.jp)"
     ]
   }
 }

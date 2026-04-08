@@ -284,18 +284,19 @@ model Racehorse {
   distanceMax    Int?
   temperament    Temperament? // 気性
   runningStyles  RunningStyle[] // 脚質（複数可）
-  spirit         EvalMark     @default(NONE) // 精神力などを評価記号代用
-  health         EvalMark     @default(NONE) // 健康
   // 成績
   starts         Int?         // 出走数
   wins           Int?         // 勝利数
   g1Wins         Int?         // G1勝利数
   // 能力値（S / A+ / A / B+ / B / C+ / C / D+ / D / E+ / E / F）
-  speed          String?
-  stamina        String?
-  power          String?
-  guts           String?
-  intelligence   String?
+  speed          String?      // スピード
+  guts           String?      // 勝負根性（逃げ・先行）
+  acceleration   String?      // 瞬発力（差し・追込）
+  power          String?      // パワー（重馬場・坂）
+  health         String?      // 健康（故障率）
+  intelligence   String?      // 賢さ（調子・指示反応）
+  spirit         String?      // 精神力（環境適応）
+  flexibility    String?      // 柔軟性（距離適性幅）
   autoComment    String?
   aiComment      String?
   memo           String?

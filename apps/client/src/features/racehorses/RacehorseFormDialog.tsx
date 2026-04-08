@@ -293,11 +293,11 @@ export const RacehorseFormDialog: React.FC<DialogProps> = ({ isOpen, onOpenChang
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>下限距離 (m)</Label>
-              <Input type="number" {...register('distanceMin', { valueAsNumber: true })} />
+              <Input type="number" step={100} {...register('distanceMin', { valueAsNumber: true })} />
             </div>
             <div className="space-y-2">
               <Label>上限距離 (m)</Label>
-              <Input type="number" {...register('distanceMax', { valueAsNumber: true })} />
+              <Input type="number" step={100} {...register('distanceMax', { valueAsNumber: true })} />
             </div>
           </div>
 
@@ -323,10 +323,19 @@ export const RacehorseFormDialog: React.FC<DialogProps> = ({ isOpen, onOpenChang
           {/* 能力値 */}
           <div className="p-4 bg-muted/20 rounded-lg border space-y-3">
             <Label className="text-base font-semibold">能力値</Label>
-            <div className="grid grid-cols-5 gap-3">
-              {(['speed', 'stamina', 'power', 'guts', 'intelligence'] as const).map((field, i) => (
+            <div className="grid grid-cols-4 gap-3">
+              {([
+                { field: 'speed',        label: 'スピード' },
+                { field: 'guts',         label: '勝負根性' },
+                { field: 'acceleration', label: '瞬発力' },
+                { field: 'power',        label: 'パワー' },
+                { field: 'health',       label: '健康' },
+                { field: 'intelligence', label: '賢さ' },
+                { field: 'spirit',       label: '精神力' },
+                { field: 'flexibility',  label: '柔軟性' },
+              ] as const).map(({ field, label }) => (
                 <div key={field} className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">{['スピード', 'スタミナ', 'パワー', '根性', '賢さ'][i]}</Label>
+                  <Label className="text-xs text-muted-foreground">{label}</Label>
                   <select {...register(field)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
                     <option value="">-</option>
                     {['S', 'A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'E+', 'E', 'F'].map(g => (
@@ -349,7 +358,7 @@ export const RacehorseFormDialog: React.FC<DialogProps> = ({ isOpen, onOpenChang
                   size="sm"
                   onClick={handleGenerateRuleBased}
                   className="gap-1 border-blue-200 text-blue-700 hover:bg-blue-50"
-                  disabled={!formValues.growthType || !formValues.surface}
+                  disabled={false}
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                   自動生成 (ルール)
