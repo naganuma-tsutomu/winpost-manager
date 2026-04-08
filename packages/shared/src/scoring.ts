@@ -83,9 +83,9 @@ export interface FoalAdvice {
 export function generateFoalAdvice(
   kappaMark: EvalMark,
   mikaMark: EvalMark,
-  managerMark: EvalMark,
-  secretaryMark: EvalMark,
-  nagamineMark: EvalMark,
+  _managerMark: EvalMark,
+  _secretaryMark: EvalMark,
+  _nagamineMark: EvalMark,
   growthType?: string,
   comments?: Record<string, string>
 ): FoalAdvice {
