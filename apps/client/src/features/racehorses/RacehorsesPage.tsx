@@ -1,14 +1,28 @@
 import React, { useState } from 'react';
 import type { Racehorse } from './api/useRacehorses.js';
 import { useRacehorses, useDeleteRacehorse } from './api/useRacehorses.js';
-
-const CURRENT_YEAR = new Date().getFullYear();
-const calcAge = (birthYear?: number) =>
-  birthYear != null ? CURRENT_YEAR - birthYear : null;
 import { RacehorseFormDialog } from './RacehorseFormDialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { PlusCircle, Trash2, Edit } from 'lucide-react';
+
+const STORAGE_KEY = 'winpost_game_current_year';
+
+function useGameCurrentYear() {
+  const [year, setYear] = useState<number>(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? Number(stored) : new Date().getFullYear();
+  });
+  const update = (v: number) => {
+    setYear(v);
+    localStorage.setItem(STORAGE_KEY, String(v));
+  };
+  return [year, update] as const;
+}
+
+const calcAge = (birthYear: number | undefined, currentYear: number) =>
+  birthYear != null ? currentYear - birthYear : null;
 
 function getGrowthTypeLabelLocal(type: string) {
   const map: Record<string, string> = {
@@ -20,7 +34,8 @@ function getGrowthTypeLabelLocal(type: string) {
 export const RacehorsesPage: React.FC = () => {
   const { data: racehorses, isLoading, isError } = useRacehorses();
   const deleteMutation = useDeleteRacehorse();
-  
+  const [gameCurrentYear, setGameCurrentYear] = useGameCurrentYear();
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingHorse, setEditingHorse] = useState<Racehorse | null>(null);
 
@@ -54,10 +69,25 @@ export const RacehorsesPage: React.FC = () => {
             所有している現役馬のパラメータを入力し、ローテーションや育成方針を確認します。
           </p>
         </div>
-        <Button onClick={handleCreate} className="gap-2 bg-blue-600 hover:bg-blue-700">
-          <PlusCircle className="w-4 h-4" />
-          新規登録
-        </Button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <span className="whitespace-nowrap">ゲーム内現在年</span>
+            <Input
+              type="number"
+              value={gameCurrentYear}
+              onChange={(e) => {
+                const v = Number(e.target.value);
+                if (!isNaN(v) && v > 1800) setGameCurrentYear(v);
+              }}
+              className="w-24 h-8 text-sm"
+            />
+            <span>年</span>
+          </div>
+          <Button onClick={handleCreate} className="gap-2 bg-blue-600 hover:bg-blue-700">
+            <PlusCircle className="w-4 h-4" />
+            新規登録
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -73,9 +103,9 @@ export const RacehorsesPage: React.FC = () => {
                     ) : (
                       <span className="text-sm font-normal text-pink-500 bg-pink-50 px-2 rounded-full">牝</span>
                     )}
-                    {calcAge(horse.birthYear) != null && (
+                    {calcAge(horse.birthYear, gameCurrentYear) != null && (
                       <span className="text-sm font-normal text-slate-500 bg-slate-100 px-2 rounded-full">
-                        {calcAge(horse.birthYear)}歳
+                        {calcAge(horse.birthYear, gameCurrentYear)}歳
                       </span>
                     )}
                   </CardTitle>

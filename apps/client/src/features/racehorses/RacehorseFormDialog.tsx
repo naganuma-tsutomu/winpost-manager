@@ -184,7 +184,9 @@ export const RacehorseFormDialog: React.FC<DialogProps> = ({ isOpen, onOpenChang
   };
 
   const handleGenerateRuleBased = () => {
-    const advice = generateRuleBasedAdvice(formValues as any);
+    const storedYear = localStorage.getItem('winpost_game_current_year');
+    const currentYear = storedYear ? Number(storedYear) : new Date().getFullYear();
+    const advice = generateRuleBasedAdvice({ ...(formValues as any), currentYear });
     setValue('autoComment', advice);
   };
 

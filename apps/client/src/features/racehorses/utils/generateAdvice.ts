@@ -5,6 +5,7 @@ export type HorseParams = {
   growthType?: 'SUPER_EARLY' | 'EARLY' | 'NORMAL' | 'LATE' | 'SUPER_LATE' | null;
   gender?: 'MALE' | 'FEMALE';
   birthYear?: number | null;
+  currentYear?: number | null;
   // 成績
   starts?: number | null;
   wins?: number | null;
@@ -17,15 +18,14 @@ export type HorseParams = {
   intelligence?: string | null;
 };
 
-const CURRENT_YEAR = new Date().getFullYear();
-
 export const generateRuleBasedAdvice = (params: HorseParams): string => {
   if (!params.growthType || !params.surface) return 'データが不足しているため、アドバイスを生成できません。';
 
   const lines: string[] = [];
 
   // ── 年齢による現況コメント ──
-  const age = params.birthYear != null ? CURRENT_YEAR - params.birthYear : null;
+  const currentYear = params.currentYear ?? new Date().getFullYear();
+  const age = params.birthYear != null ? currentYear - params.birthYear : null;
   if (age != null) {
     if (age <= 1) {
       lines.push(`現在${age}歳、まだデビュー前です。調教で基礎能力を高めることに専念しましょう。`);
