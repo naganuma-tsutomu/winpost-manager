@@ -52,6 +52,7 @@ kind: Service
 metadata:
   name: winpost-ocr-service
 spec:
+  type: NodePort
   selector:
     app: winpost-ocr
   ports:

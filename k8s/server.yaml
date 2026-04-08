@@ -29,6 +29,7 @@ kind: Service
 metadata:
   name: winpost-server-service
 spec:
+  type: NodePort
   selector:
     app: winpost-server
   ports:
