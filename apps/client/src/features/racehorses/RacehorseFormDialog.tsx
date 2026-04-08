@@ -5,6 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -111,8 +112,6 @@ export const RacehorseFormDialog: React.FC<DialogProps> = ({ isOpen, onOpenChang
     defaultValues: {
       gender: 'MALE',
       status: 'ACTIVE',
-      spirit: 'NONE',
-      health: 'NONE',
     }
   });
 
@@ -153,8 +152,6 @@ export const RacehorseFormDialog: React.FC<DialogProps> = ({ isOpen, onOpenChang
           birthYear: new Date().getFullYear() - 2,
           gender: 'MALE',
           status: 'ACTIVE',
-          spirit: 'NONE',
-          health: 'NONE',
           distanceMin: 1600,
           distanceMax: 2400,
         });
@@ -163,11 +160,21 @@ export const RacehorseFormDialog: React.FC<DialogProps> = ({ isOpen, onOpenChang
   }, [isOpen, horse, reset]);
 
   const onSubmit = async (data: UpdateRacehorseDTO) => {
+    // サーバー側のバリデーションエラーを防ぐため、空文字、NaN、'NONE' を null に変換
+    const cleanedData = Object.fromEntries(
+      Object.entries(data).map(([key, value]) => {
+        if (value === '' || Number.isNaN(value) || value === 'NONE') {
+          return [key, null];
+        }
+        return [key, value];
+      })
+    );
+
     try {
       if (horse) {
-        await updateMutation.mutateAsync({ id: horse.id, data });
+        await updateMutation.mutateAsync({ id: horse.id, data: cleanedData });
       } else {
-        await createMutation.mutateAsync(data as any);
+        await createMutation.mutateAsync(cleanedData as any);
       }
       onOpenChange(false);
     } catch (e) {
@@ -199,6 +206,7 @@ export const RacehorseFormDialog: React.FC<DialogProps> = ({ isOpen, onOpenChang
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{horse ? '現役馬の編集' : '現役馬の登録'}</DialogTitle>
+          <DialogDescription className="sr-only">現役馬の情報を入力するフォームです。</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
