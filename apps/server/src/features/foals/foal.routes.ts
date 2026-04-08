@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { prisma } from '@winpost/database';
+import { prisma, FlagType } from '@winpost/database';
 import { z } from 'zod';
 
 export const foalRouter = Router();
@@ -19,7 +19,7 @@ const createFoalSchema = z.object({
 });
 
 const createFlagSchema = z.object({
-  type: z.enum(['OVERSEAS_SALE', 'KEEP', 'SELL', 'WATCH']),
+  type: z.nativeEnum(FlagType),
   description: z.string().optional().nullable(),
   targetDate: z.string().optional().nullable(),
 });
