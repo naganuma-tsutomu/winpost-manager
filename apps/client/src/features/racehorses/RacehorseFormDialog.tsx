@@ -178,6 +178,43 @@ export const RacehorseFormDialog: React.FC<DialogProps> = ({ isOpen, onOpenChang
             </div>
           </div>
 
+          {/* 成績 */}
+          <div className="p-4 bg-muted/20 rounded-lg border space-y-3">
+            <Label className="text-base font-semibold">成績</Label>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">出走数</Label>
+                <Input type="number" min={0} {...register('starts', { valueAsNumber: true })} placeholder="0" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">勝利数</Label>
+                <Input type="number" min={0} {...register('wins', { valueAsNumber: true })} placeholder="0" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">G1勝利数</Label>
+                <Input type="number" min={0} {...register('g1Wins', { valueAsNumber: true })} placeholder="0" />
+              </div>
+            </div>
+          </div>
+
+          {/* 能力値 */}
+          <div className="p-4 bg-muted/20 rounded-lg border space-y-3">
+            <Label className="text-base font-semibold">能力値</Label>
+            <div className="grid grid-cols-5 gap-3">
+              {(['speed', 'stamina', 'power', 'guts', 'intelligence'] as const).map((field, i) => (
+                <div key={field} className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">{['スピード', 'スタミナ', 'パワー', '根性', '賢さ'][i]}</Label>
+                  <select {...register(field)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                    <option value="">-</option>
+                    {['S', 'A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'E+', 'E', 'F'].map(g => (
+                      <option key={g} value={g}>{g}</option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div className="p-4 bg-muted/30 rounded-lg border space-y-4">
             <div className="flex items-center justify-between">
               <Label className="text-base font-semibold">育成アドバイス機能</Label>

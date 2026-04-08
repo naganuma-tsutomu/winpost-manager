@@ -19,6 +19,16 @@ export interface Racehorse {
   runningStyle?: 'GREAT_ESCAPE' | 'ESCAPE' | 'LEADER' | 'CLOSER' | 'CHASER' | 'VERSATILE';
   spirit: string; // EvalMark
   health: string; // EvalMark
+  // 成績
+  starts?: number;
+  wins?: number;
+  g1Wins?: number;
+  // 能力値（グレード）
+  speed?: string;
+  stamina?: string;
+  power?: string;
+  guts?: string;
+  intelligence?: string;
   autoComment?: string;
   aiComment?: string;
   memo?: string;

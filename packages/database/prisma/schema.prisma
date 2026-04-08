@@ -267,6 +267,16 @@ model Racehorse {
   runningStyle   RunningStyle? // 脚質
   spirit         EvalMark     @default(NONE) // 精神力などを評価記号代用
   health         EvalMark     @default(NONE) // 健康
+  // 成績
+  starts         Int?         // 出走数
+  wins           Int?         // 勝利数
+  g1Wins         Int?         // G1勝利数
+  // 能力値（S / A+ / A / B+ / B / C+ / C / D+ / D / E+ / E / F）
+  speed          String?
+  stamina        String?
+  power          String?
+  guts           String?
+  intelligence   String?
   autoComment    String?
   aiComment      String?
   memo           String?

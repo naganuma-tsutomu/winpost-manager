@@ -18,6 +18,16 @@ const racehorseCreateSchema = z.object({
   runningStyle: z.enum(['GREAT_ESCAPE', 'ESCAPE', 'LEADER', 'CLOSER', 'CHASER', 'VERSATILE']).optional().nullable(),
   spirit: evalMarkEnum.optional().default('NONE'),
   health: evalMarkEnum.optional().default('NONE'),
+  // 成績
+  starts: z.number().int().min(0).optional().nullable(),
+  wins: z.number().int().min(0).optional().nullable(),
+  g1Wins: z.number().int().min(0).optional().nullable(),
+  // 能力値（グレード）
+  speed: z.enum(['S', 'A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'E+', 'E', 'F']).optional().nullable(),
+  stamina: z.enum(['S', 'A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'E+', 'E', 'F']).optional().nullable(),
+  power: z.enum(['S', 'A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'E+', 'E', 'F']).optional().nullable(),
+  guts: z.enum(['S', 'A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'E+', 'E', 'F']).optional().nullable(),
+  intelligence: z.enum(['S', 'A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'E+', 'E', 'F']).optional().nullable(),
   autoComment: z.string().optional().nullable(),
   aiComment: z.string().optional().nullable(),
   memo: z.string().optional().nullable(),

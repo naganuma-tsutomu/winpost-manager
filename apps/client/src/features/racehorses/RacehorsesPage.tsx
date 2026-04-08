@@ -97,6 +97,42 @@ export const RacehorsesPage: React.FC = () => {
                 </div>
               </div>
 
+              {(horse.starts != null || horse.wins != null || horse.g1Wins != null) && (
+                <div className="grid grid-cols-3 gap-1 text-sm text-center bg-muted/30 rounded-md p-2">
+                  <div>
+                    <div className="text-xs text-muted-foreground">出走</div>
+                    <div className="font-semibold">{horse.starts ?? '-'}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground">勝利</div>
+                    <div className="font-semibold">{horse.wins ?? '-'}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground">G1</div>
+                    <div className="font-semibold text-yellow-600">{horse.g1Wins ?? '-'}</div>
+                  </div>
+                </div>
+              )}
+
+              {(horse.speed || horse.stamina || horse.power || horse.guts || horse.intelligence) && (
+                <div className="grid grid-cols-5 gap-1 text-xs text-center">
+                  {([
+                    { label: 'SP', value: horse.speed },
+                    { label: 'ST', value: horse.stamina },
+                    { label: 'PW', value: horse.power },
+                    { label: '根', value: horse.guts },
+                    { label: '賢', value: horse.intelligence },
+                  ] as { label: string; value: string | undefined }[]).map(({ label, value }) => (
+                    <div key={label} className="bg-slate-100 dark:bg-slate-800 rounded p-1">
+                      <div className="text-muted-foreground">{label}</div>
+                      <div className={`font-bold ${value === 'S' ? 'text-red-500' : value?.startsWith('A') ? 'text-orange-500' : value?.startsWith('B') ? 'text-yellow-600' : ''}`}>
+                        {value ?? '-'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {(horse.autoComment || horse.aiComment) && (
                 <div className="p-3 bg-blue-50/50 dark:bg-blue-950/20 rounded-md border border-blue-100 dark:border-blue-900">
                   <h4 className="text-xs font-semibold text-blue-800 dark:text-blue-300 mb-1 flex items-center gap-1">
