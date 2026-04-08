@@ -14,6 +14,7 @@ import { calendarRouter } from './features/calendar/calendar.routes.js';
 import { galleryRouter } from './features/gallery/gallery.routes.js';
 import { racehorseRouter } from './features/racehorses/racehorse.routes.js';
 import { aiRouter } from './features/ai/ai.routes.js';
+import { settingsRouter } from './features/settings/settings.routes.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -40,6 +41,7 @@ app.use('/api/calendar', calendarRouter);
 app.use('/api/gallery', galleryRouter);
 app.use('/api/racehorses', racehorseRouter);
 app.use('/api/ai', aiRouter);
+app.use('/api/settings', settingsRouter);
 
 // エラーハンドリング
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

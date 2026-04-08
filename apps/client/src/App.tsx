@@ -12,6 +12,7 @@ import { BreedingPlanPage } from './features/breeding/BreedingPlanPage';
 import { OcrPage } from './features/ocr/OcrPage';
 import { CalendarPage } from './features/calendar/CalendarPage';
 import { GalleryPage } from './features/gallery/GalleryPage';
+import { SettingsPage } from './features/settings/SettingsPage';
 
 function App() {
   return (
@@ -33,6 +34,8 @@ function App() {
         {/* メモ機能 */}
         <Route path="/calendar" element={<CalendarPage />} />
         <Route path="/gallery" element={<GalleryPage />} />
+        {/* 設定 */}
+        <Route path="/settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

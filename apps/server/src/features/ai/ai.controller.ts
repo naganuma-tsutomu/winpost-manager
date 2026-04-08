@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import fetch from 'node-fetch';
+import { loadSettings } from '../settings/settings.controller.js';
 
 /**
  * 馬のパラメータを日本語化するマッピング等があれば使うためのヘルパー
@@ -60,9 +61,10 @@ ${horseDetails}
 
 アドバイスの出力のみを行い、その他の挨拶やシステムメッセージは不要です。`;
 
-    // Ollama APIの設定 (デフォルトはlocalhostの標準ポート)
-    const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
-    const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama3'; // 利用環境に合わせて変更可能にする
+    // Ollama APIの設定（設定ファイル → 環境変数 の優先順位）
+    const settings = loadSettings();
+    const OLLAMA_URL = settings.ollamaUrl;
+    const OLLAMA_MODEL = settings.ollamaModel;
 
     console.log(`Sending prompt to Ollama (${OLLAMA_URL}, model: ${OLLAMA_MODEL})...`);
     

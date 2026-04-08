@@ -15,6 +15,7 @@ import {
   Clock,
   Images,
   Activity,
+  Settings,
 } from 'lucide-react';
 
 const navItems = [
@@ -39,6 +40,9 @@ const navItems = [
   ]},
   { section: 'OCR 自動入力', items: [
     { to: '/ocr', icon: ScanLine, label: 'スクショ → 自動入力' },
+  ]},
+  { section: 'システム', items: [
+    { to: '/settings', icon: Settings, label: '設定' },
   ]},
 ];
 

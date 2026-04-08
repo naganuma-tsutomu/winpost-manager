@@ -101,6 +101,12 @@ export const api = {
       delete: (id: number) => request<void>(`/calendar/events/${id}`, { method: 'DELETE' }),
     }
   },
+  // 設定
+  settings: {
+    get: () => request<{ ollamaUrl: string; ollamaModel: string }>('/settings'),
+    update: (data: { ollamaUrl: string; ollamaModel: string }) =>
+      request<{ ollamaUrl: string; ollamaModel: string }>('/settings', { method: 'PUT', body: JSON.stringify(data) }),
+  },
   // ギャラリー
   gallery: {
     list: () => request<GalleryEntry[]>('/gallery'),
