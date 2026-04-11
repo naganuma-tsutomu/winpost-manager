@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { prisma } from '@winpost/database';
 import { z } from 'zod';
 
-const gradeEnum = z.enum(['S', 'A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'E+', 'E', 'F']).optional().nullable();
+const gradeEnum = z.enum(['S+', 'S', 'A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'E+', 'E', 'F']).optional().nullable();
 
 const racehorseCreateSchema = z.object({
   name: z.string().min(1),
@@ -32,6 +32,7 @@ const racehorseCreateSchema = z.object({
   autoComment: z.string().optional().nullable(),
   aiComment: z.string().optional().nullable(),
   memo: z.string().optional().nullable(),
+  screenshotUrl: z.string().optional().nullable(),
   status: z.enum(['ACTIVE', 'RETIRED']).optional().default('ACTIVE'),
 });
 

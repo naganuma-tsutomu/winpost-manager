@@ -5,7 +5,32 @@ import { RacehorseFormDialog } from './RacehorseFormDialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { PlusCircle, Trash2, Edit } from 'lucide-react';
+import { PlusCircle, Trash2, Edit, Camera, X } from 'lucide-react';
+
+// スクリーンショット拡大モーダル
+function ScreenshotLightbox({ url, name, onClose }: { url: string; name: string; onClose: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+      onClick={onClose}
+    >
+      <div className="relative max-w-5xl w-full" onClick={(e) => e.stopPropagation()}>
+        <button
+          className="absolute -top-10 right-0 text-white hover:text-slate-300 flex items-center gap-1 text-sm"
+          onClick={onClose}
+        >
+          <X className="w-5 h-5" /> 閉じる
+        </button>
+        <img
+          src={url}
+          alt={`${name} 能力画面`}
+          className="w-full rounded-lg shadow-2xl object-contain max-h-[85vh]"
+        />
+        <p className="text-center text-white/70 text-sm mt-2">{name} — 能力画面スクリーンショット</p>
+      </div>
+    </div>
+  );
+}
 
 const STORAGE_KEY = 'winpost_game_current_year';
 
@@ -38,6 +63,7 @@ export const RacehorsesPage: React.FC = () => {
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingHorse, setEditingHorse] = useState<Racehorse | null>(null);
+  const [lightboxHorse, setLightboxHorse] = useState<Racehorse | null>(null);
 
   const handleCreate = () => {
     setEditingHorse(null);
@@ -167,12 +193,30 @@ export const RacehorsesPage: React.FC = () => {
                   ] as { label: string; value: string | undefined }[]).map(({ label, value }) => (
                     <div key={label} className="bg-slate-100 dark:bg-slate-800 rounded p-1">
                       <div className="text-muted-foreground">{label}</div>
-                      <div className={`font-bold ${value === 'S' ? 'text-red-500' : value?.startsWith('A') ? 'text-orange-500' : value?.startsWith('B') ? 'text-yellow-600' : ''}`}>
+                      <div className={`font-bold ${value === 'S+' ? 'text-purple-600' : value === 'S' ? 'text-red-500' : value?.startsWith('A') ? 'text-orange-500' : value?.startsWith('B') ? 'text-yellow-600' : ''}`}>
                         {value ?? '-'}
                       </div>
                     </div>
                   ))}
                 </div>
+              )}
+
+              {horse.screenshotUrl && (
+                <button
+                  type="button"
+                  className="w-full rounded-md overflow-hidden border hover:opacity-90 transition-opacity relative group/ss"
+                  onClick={() => setLightboxHorse(horse)}
+                  title="クリックで拡大"
+                >
+                  <img
+                    src={horse.screenshotUrl}
+                    alt={`${horse.name} 能力画面`}
+                    className="w-full object-cover max-h-28"
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover/ss:bg-black/20 transition-colors flex items-center justify-center">
+                    <Camera className="w-6 h-6 text-white opacity-0 group-hover/ss:opacity-100 transition-opacity drop-shadow" />
+                  </div>
+                </button>
               )}
 
               {(horse.autoComment || horse.aiComment) && (
@@ -207,6 +251,14 @@ export const RacehorsesPage: React.FC = () => {
         onOpenChange={setIsDialogOpen}
         horse={editingHorse}
       />
+
+      {lightboxHorse?.screenshotUrl && (
+        <ScreenshotLightbox
+          url={lightboxHorse.screenshotUrl}
+          name={lightboxHorse.name}
+          onClose={() => setLightboxHorse(null)}
+        />
+      )}
     </div>
   );
 };

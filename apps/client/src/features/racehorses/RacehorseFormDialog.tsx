@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import {
   Dialog,
@@ -11,9 +11,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { Racehorse, UpdateRacehorseDTO } from './api/useRacehorses.js';
-import { useCreateRacehorse, useUpdateRacehorse, useAIAdvice } from './api/useRacehorses.js';
+import { useCreateRacehorse, useUpdateRacehorse, useAIAdvice, useUploadScreenshot, useDeleteScreenshot } from './api/useRacehorses.js';
 import { generateRuleBasedAdvice } from './utils/generateAdvice.js';
-import { Sparkles, BrainCircuit, RefreshCw } from 'lucide-react';
+import { Sparkles, BrainCircuit, RefreshCw, ImagePlus, Trash2, ImageIcon } from 'lucide-react';
 
 interface DialogProps {
   isOpen: boolean;
@@ -106,7 +106,12 @@ export const RacehorseFormDialog: React.FC<DialogProps> = ({ isOpen, onOpenChang
   const createMutation = useCreateRacehorse();
   const updateMutation = useUpdateRacehorse();
   const aiAdviceMutation = useAIAdvice();
+  const uploadScreenshotMutation = useUploadScreenshot();
+  const deleteScreenshotMutation = useDeleteScreenshot();
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [pendingScreenshot, setPendingScreenshot] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { register, handleSubmit, reset, setValue, watch } = useForm<UpdateRacehorseDTO>({
     defaultValues: {
@@ -156,6 +161,8 @@ export const RacehorseFormDialog: React.FC<DialogProps> = ({ isOpen, onOpenChang
           distanceMax: 2400,
         });
       }
+      setPendingScreenshot(null);
+      setPreviewUrl(null);
     }
   }, [isOpen, horse, reset]);
 
@@ -171,10 +178,15 @@ export const RacehorseFormDialog: React.FC<DialogProps> = ({ isOpen, onOpenChang
     );
 
     try {
+      let savedHorse: { id: number };
       if (horse) {
-        await updateMutation.mutateAsync({ id: horse.id, data: cleanedData });
+        savedHorse = await updateMutation.mutateAsync({ id: horse.id, data: cleanedData });
       } else {
-        await createMutation.mutateAsync(cleanedData as any);
+        savedHorse = await createMutation.mutateAsync(cleanedData as any);
+      }
+      // スクリーンショットが選択されていればアップロード
+      if (pendingScreenshot) {
+        await uploadScreenshotMutation.mutateAsync({ id: savedHorse.id, file: pendingScreenshot });
       }
       onOpenChange(false);
     } catch (e) {
@@ -182,6 +194,24 @@ export const RacehorseFormDialog: React.FC<DialogProps> = ({ isOpen, onOpenChang
       alert('保存に失敗しました');
     }
   };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPendingScreenshot(file);
+    setPreviewUrl(URL.createObjectURL(file));
+  };
+
+  const handleRemoveScreenshot = async () => {
+    if (horse?.screenshotUrl) {
+      await deleteScreenshotMutation.mutateAsync(horse.id);
+    }
+    setPendingScreenshot(null);
+    setPreviewUrl(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const currentScreenshot = previewUrl ?? horse?.screenshotUrl ?? null;
 
   const handleGenerateRuleBased = () => {
     const storedYear = localStorage.getItem('winpost_game_current_year');
@@ -357,7 +387,7 @@ export const RacehorseFormDialog: React.FC<DialogProps> = ({ isOpen, onOpenChang
                   <Label className="text-xs text-muted-foreground">{label}</Label>
                   <select {...register(field)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
                     <option value="">-</option>
-                    {['S', 'A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'E+', 'E', 'F'].map(g => (
+                    {['S+', 'S', 'A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'E+', 'E', 'F'].map(g => (
                       <option key={g} value={g}>{g}</option>
                     ))}
                   </select>
@@ -418,6 +448,57 @@ export const RacehorseFormDialog: React.FC<DialogProps> = ({ isOpen, onOpenChang
                 />
               </div>
             </div>
+          </div>
+
+          {/* スクリーンショット */}
+          <div className="p-4 bg-muted/20 rounded-lg border space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-base font-semibold">能力画面スクリーンショット</Label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <ImagePlus className="w-3.5 h-3.5" />
+                  {currentScreenshot ? '変更' : '画像を選択'}
+                </Button>
+                {currentScreenshot && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="gap-1 border-red-200 text-red-600 hover:bg-red-50"
+                    onClick={handleRemoveScreenshot}
+                    disabled={deleteScreenshotMutation.isPending}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    削除
+                  </Button>
+                )}
+              </div>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+            {currentScreenshot ? (
+              <img
+                src={currentScreenshot}
+                alt="能力画面スクリーンショット"
+                className="w-full rounded-md border object-contain max-h-48"
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-24 rounded-md border border-dashed text-muted-foreground text-sm gap-1">
+                <ImageIcon className="w-6 h-6 opacity-40" />
+                <span>スクリーンショットが未登録です</span>
+              </div>
+            )}
           </div>
 
           {/* メモ */}

@@ -300,9 +300,21 @@ model Racehorse {
   autoComment    String?
   aiComment      String?
   memo           String?
+  screenshotUrl  String?      // 能力画面スクリーンショット
   status         HorseStatus  @default(ACTIVE)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
+}
+
+// ========================================
+// アプリ設定（シングルトン id=1）
+// ========================================
+
+model AppSetting {
+  id           Int      @id @default(autoincrement())
+  ollamaUrl    String   @default("http://localhost:11434")
+  ollamaModel  String   @default("llama3")
+  updatedAt    DateTime @updatedAt
 }
 
 enum Surface {

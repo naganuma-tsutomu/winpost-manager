@@ -61,8 +61,8 @@ ${horseDetails}
 
 アドバイスの出力のみを行い、その他の挨拶やシステムメッセージは不要です。`;
 
-    // Ollama APIの設定（設定ファイル → 環境変数 の優先順位）
-    const settings = loadSettings();
+    // Ollama APIの設定（DB → 環境変数 の優先順位）
+    const settings = await loadSettings();
     const OLLAMA_URL = settings.ollamaUrl;
     const OLLAMA_MODEL = settings.ollamaModel;
 

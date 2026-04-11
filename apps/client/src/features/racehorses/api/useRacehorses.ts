@@ -33,6 +33,7 @@ export interface Racehorse {
   autoComment?: string;
   aiComment?: string;
   memo?: string;
+  screenshotUrl?: string;
   status: 'ACTIVE' | 'RETIRED';
 }
 
@@ -122,5 +123,42 @@ export const useDeleteRacehorse = () => {
 export const useAIAdvice = () => {
   return useMutation({
     mutationFn: fetchAIAdvice,
+  });
+};
+
+const uploadScreenshot = async (params: { id: number; file: File }): Promise<Racehorse> => {
+  const formData = new FormData();
+  formData.append('screenshot', params.file);
+  const res = await fetch(`${API_URL}/racehorses/${params.id}/screenshot`, {
+    method: 'POST',
+    body: formData,
+  });
+  if (!res.ok) throw new Error('Failed to upload screenshot');
+  return res.json();
+};
+
+const deleteScreenshot = async (id: number): Promise<Racehorse> => {
+  const res = await fetch(`${API_URL}/racehorses/${id}/screenshot`, { method: 'DELETE' });
+  if (!res.ok) throw new Error('Failed to delete screenshot');
+  return res.json();
+};
+
+export const useUploadScreenshot = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: uploadScreenshot,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: racehorseKeys.all });
+    },
+  });
+};
+
+export const useDeleteScreenshot = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteScreenshot,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: racehorseKeys.all });
+    },
   });
 };
