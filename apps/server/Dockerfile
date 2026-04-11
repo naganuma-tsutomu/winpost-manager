@@ -37,5 +37,5 @@ WORKDIR /app/apps/server
 # Expressのデフォルトポート（適宜環境変数で上書きされる想定）
 EXPOSE 3000
 
-# package.json の start スクリプト ("node dist/index.js") を実行
-CMD ["pnpm", "start"]
+# DB スキーマを反映してからサーバーを起動
+CMD ["sh", "-c", "cd /app && pnpm --filter @winpost/database db:push && cd /app/apps/server && pnpm start"]
