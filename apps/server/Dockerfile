@@ -38,4 +38,4 @@ WORKDIR /app/apps/server
 EXPOSE 3000
 
 # DB スキーマを反映してからサーバーを起動
-CMD ["sh", "-c", "cd /app && pnpm --filter @winpost/database db:push && cd /app/apps/server && pnpm start"]
+CMD ["sh", "-c", "cd /app && pnpm --filter @winpost/database db:push -- --accept-data-loss && cd /app/apps/server && pnpm start"]
